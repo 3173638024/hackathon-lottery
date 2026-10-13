@@ -10,10 +10,13 @@
   --bg0:#070B16; --bg1:#0E1526; --panel:rgba(255,255,255,.05); --panel2:rgba(255,255,255,.08);
   --line:rgba(255,255,255,.10); --gold:#F7D774; --gold2:#E8B84B; --gold-deep:#8A6A1F;
   --green:#07C160; --green2:#05A550; --red:#FF5A5F;
+  --lv1a:#F7D774; --lv1b:#E8B84B; --lv1t:#3A2A00;          /* 一等/默认：金 */
+  --lv2a:#CDB8FF; --lv2b:#9B7BFF; --lv2t:#2A1B5E;          /* 二等：紫 */
+  --lv3a:#EDF2F9; --lv3b:#B9C6DA; --lv3t:#2A3444;          /* 三等：银 */
   --txt:#EAF0FF; --sub:#8B96B8; --sub2:#5E6A8C;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{height:100%}
+html,body{height:100%; height:100dvh}
 body{
   font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Segoe UI",sans-serif;
   background:var(--bg0); color:var(--txt); overflow:hidden;
@@ -72,6 +75,26 @@ body{
 #joinDone .tick{font-size:44px; line-height:1}
 #joinDone .who{font-size:24px; font-weight:800; color:var(--gold); margin-top:10px; letter-spacing:1px}
 #joinDone .tip{font-size:13px; color:var(--sub); margin-top:10px; line-height:1.8}
+.winpeek-btn{margin-top:16px; padding:9px 22px; font-size:13px; font-weight:700; letter-spacing:2px;
+  background:rgba(247,215,116,.10); color:var(--gold); border:1px solid rgba(247,215,116,.4); border-radius:999px; cursor:pointer}
+.winpeek-btn:active{transform:scale(.96)}
+/* 观众端中奖名单弹层 */
+#joinWinList{position:fixed; inset:0; z-index:70; display:flex; align-items:center; justify-content:center; padding:26px;
+  background:rgba(7,11,22,.9); backdrop-filter:blur(8px); animation:fadein .25s}
+#joinWinList .box{width:100%; max-width:380px; max-height:76vh; overflow:auto; text-align:center;
+  background:linear-gradient(180deg, rgba(40,32,10,.9), rgba(14,18,34,.94));
+  border:1.5px solid rgba(247,215,116,.5); border-radius:26px; padding:34px 26px 28px;
+  box-shadow:0 24px 90px rgba(0,0,0,.6)}
+#joinWinList .cup{font-size:46px}
+#joinWinList .tt{font-size:19px; font-weight:800; letter-spacing:3px; color:var(--gold); margin-top:8px}
+#joinWinList .grp{margin-top:16px; text-align:left}
+#joinWinList .grp .pt{font-size:12px; font-weight:700; letter-spacing:1px; color:var(--gold); margin-bottom:6px}
+#joinWinList .grp .chips{display:flex; flex-wrap:wrap; gap:6px}
+#joinWinList .grp .chips span{padding:4px 12px; border-radius:999px; font-size:13px; font-weight:600;
+  background:rgba(247,215,116,.12); border:1px solid rgba(247,215,116,.35); color:var(--gold)}
+#joinWinList .empty{margin-top:18px; font-size:13px; color:var(--sub2)}
+#joinWinList .close{margin-top:22px; padding:10px 34px; font-size:13px; font-weight:700; letter-spacing:2px;
+  background:rgba(255,255,255,.07); color:var(--sub); border:1px solid var(--line); border-radius:999px; cursor:pointer}
 .join-foot{margin-top:22px; font-size:11px; color:var(--sub2); letter-spacing:.5px; line-height:1.8}
 .pulse-num{display:inline-block}
 .pulse-num.bump{animation:bump .45s cubic-bezier(.34,1.56,.64,1)}
@@ -93,6 +116,7 @@ body{
 .head-count{display:flex; align-items:baseline; gap:6px; padding:6px 16px; background:var(--panel); border:1px solid var(--line); border-radius:999px}
 .head-count b{font-size:22px; font-weight:800; color:var(--gold); font-variant-numeric:tabular-nums}
 .head-count span{font-size:11px; color:var(--sub)}
+.head-clock{padding:6px 14px; border:1px solid var(--line); border-radius:999px; font-size:14px; font-weight:700; color:var(--sub); font-variant-numeric:tabular-nums; letter-spacing:1px}
 
 .screen-main{flex:1; display:grid; grid-template-columns:1fr 372px; gap:18px; padding:18px 26px 22px; min-height:0}
 
@@ -115,7 +139,26 @@ body{
   background:linear-gradient(135deg,var(--gold),var(--gold2)); color:#3A2A00;
   box-shadow:0 6px 30px rgba(232,184,75,.4), inset 0 1px 0 rgba(255,255,255,.5);
 }
-.prize-tag.empty{background:var(--panel2); color:var(--sub); box-shadow:none; border:1px dashed var(--line)}
+.prize-tag.lv1{background:linear-gradient(135deg,var(--lv1a),var(--lv1b)); color:var(--lv1t);
+  box-shadow:0 6px 30px rgba(232,184,75,.4), inset 0 1px 0 rgba(255,255,255,.5)}
+.prize-tag.lv2{background:linear-gradient(135deg,var(--lv2a),var(--lv2b)); color:var(--lv2t);
+  box-shadow:0 6px 30px rgba(155,123,255,.42), inset 0 1px 0 rgba(255,255,255,.5)}
+.prize-tag.lv3{background:linear-gradient(135deg,var(--lv3a),var(--lv3b)); color:var(--lv3t);
+  box-shadow:0 6px 30px rgba(170,190,220,.38), inset 0 1px 0 rgba(255,255,255,.65)}
+/* 奖项等级配色（中奖弹层 + 名单 chips） */
+#winBanner.lv1{background:radial-gradient(circle at 50% 42%, rgba(247,215,116,.24), rgba(7,11,22,.90) 55%)}
+#winBanner.lv1 .win-card{border-color:rgba(247,215,116,.6); box-shadow:0 0 130px rgba(232,184,75,.4), inset 0 1px 0 rgba(255,255,255,.15)}
+#winBanner.lv2{background:radial-gradient(circle at 50% 42%, rgba(155,123,255,.24), rgba(7,11,22,.90) 55%)}
+#winBanner.lv2 .win-card{border-color:rgba(155,123,255,.6); box-shadow:0 0 130px rgba(155,123,255,.38), inset 0 1px 0 rgba(255,255,255,.15)}
+#winBanner.lv3{background:radial-gradient(circle at 50% 42%, rgba(190,205,230,.20), rgba(7,11,22,.90) 55%)}
+#winBanner.lv3 .win-card{border-color:rgba(190,205,230,.55); box-shadow:0 0 130px rgba(170,190,220,.32), inset 0 1px 0 rgba(255,255,255,.15)}
+#winBanner.lv2 #winPrize{color:var(--lv2a)} #winBanner.lv2 .cong{color:var(--lv2a)}
+#winBanner.lv3 #winPrize{color:#DDE6F2} #winBanner.lv3 .cong{color:#C4D2E6}
+#winBanner.lv2 #winNames .w{background:linear-gradient(135deg, var(--lv2a), var(--lv2b)); color:var(--lv2t); box-shadow:0 8px 28px rgba(155,123,255,.4)}
+#winBanner.lv3 #winNames .w{background:linear-gradient(135deg, var(--lv3a), var(--lv3b)); color:var(--lv3t); box-shadow:0 8px 28px rgba(170,190,220,.4)}
+#winnerList .chip.lv1{background:rgba(247,215,116,.12); border-color:rgba(247,215,116,.35); color:var(--gold)}
+#winnerList .chip.lv2{background:rgba(155,123,255,.13); border-color:rgba(155,123,255,.4); color:#CDB8FF}
+#winnerList .chip.lv3{background:rgba(190,205,230,.12); border-color:rgba(190,205,230,.4); color:#DDE6F2}
 .roll-box{position:relative; width:100%; display:flex; align-items:center; justify-content:center; min-height:clamp(90px,16vh,150px); margin:6px 0}
 #rollName{
   font-size:clamp(44px,7.2vw,96px); font-weight:900; letter-spacing:3px; text-align:center; padding:0 30px;
@@ -253,6 +296,7 @@ body{
         <div class="tick">🎉</div>
         <div class="who" id="doneNick"></div>
         <div class="tip">已加入抽奖池<br>请在现场等待开奖，大屏会念到你的名字</div>
+        <button class="winpeek-btn" id="winpeekBtn">🏆 查看中奖名单</button>
       </div>
       <div class="join-foot">当前已有 <b class="pulse-num" id="joinCount">0</b> 位同学参与<br>主办：信息与软件工程学院研究生分会 | 协办：华东交通大学学生会</div>
     </div>
@@ -264,6 +308,7 @@ body{
       <span class="logo">🎁</span>
       <div class="t">腾讯AI百校行 · 黑客松分享会<small>LUCKY DRAW · 现场抽奖</small></div>
       <div class="live"><i></i>LIVE</div>
+      <div class="head-clock" id="clock">--:--</div>
       <div class="head-count"><b id="scrCount">0</b><span>人已参与</span></div>
     </header>
     <div id="netWarn">⚠️ 云端连接不稳定，请检查网络后刷新；若持续失败请联系现场工作人员。</div>
@@ -307,6 +352,16 @@ body{
   </section>
 </div>
 
+<!-- 观众端中奖名单 -->
+<div id="joinWinList" class="hidden">
+  <div class="box">
+    <div class="cup">🏆</div>
+    <div class="tt">中 奖 名 单</div>
+    <div id="joinWinBody"></div>
+    <button class="close" id="joinWinClose">关 闭</button>
+  </div>
+</div>
+
 <!-- 中奖弹层 -->
 <div id="winBanner" class="hidden">
   <div class="win-card">
@@ -330,6 +385,14 @@ function toast(msg, ms){
   clearTimeout(toastTimer); toastTimer = setTimeout(function(){ t.classList.remove("show"); }, ms || 2600);
 }
 function bumpEl(el){ el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump"); }
+
+/* 奖项等级：一等/特等/大奖 → 金(lv1)，二等 → 紫(lv2)，三等 → 银(lv3)，其他默认金(lv1) */
+function prizeLevel(prize){
+  var p = String(prize || "");
+  if (/三|3/.test(p)) return "lv3";
+  if (/二|2/.test(p)) return "lv2";
+  return "lv1";
+}
 
 /* ================= 云端（自适应：本地代理 / 公网直连） ================= */
 var API = (function(){
@@ -475,8 +538,9 @@ function startScreenLoop(){
       });
       var html = "";
       order.forEach(function(p){
+        var lv = prizeLevel(p);
         html += '<div class="grp"><div class="pt">🎁 ' + esc(p) + '</div><div class="chips">' +
-          groups[p].map(function(n){ return '<span class="chip">' + esc(n) + '</span>'; }).join("") + '</div></div>';
+          groups[p].map(function(n){ return '<span class="chip ' + lv + '">' + esc(n) + '</span>'; }).join("") + '</div></div>';
       });
       $("winnerList").innerHTML = html;
     }).catch(function(){});
@@ -498,6 +562,7 @@ function draw(){
   $("drawBtn").disabled = true;
   $("prizeTag").textContent = prize;
   $("prizeTag").classList.remove("empty");
+  $("prizeTag").classList.add(prizeLevel(prize));
   $("drawState").textContent = "🎰 抽奖中，祝你好运…";
   $("drawState").classList.add("hot");
   $("rollName").classList.add("rolling");
@@ -550,14 +615,48 @@ function draw(){
   });
 }
 function showWin(prize, pick){
+  var lv = prizeLevel(prize);
+  $("winBanner").className = lv;
   $("winPrize").textContent = prize;
   $("winNames").innerHTML = pick.map(function(n){ return '<span class="w">' + esc(n) + '</span>'; }).join("");
   $("winBanner").classList.remove("hidden");
   var cv = $("confetti"); cv.classList.remove("hidden");
-  confetti(cv);
+  confetti(cv, lv);
   setTimeout(function(){ $("winBanner").classList.add("hidden"); }, 6000);
 }
 $("drawBtn").addEventListener("click", draw);
+
+/* ---------- 观众端：查看中奖名单 ---------- */
+$("winpeekBtn").addEventListener("click", function(){
+  getBatch().then(function(b){ return getWinners(b); }).then(function(list){
+    var body = $("joinWinBody");
+    if (!list.length){ body.innerHTML = '<div class="empty">还没有中奖者，稍后再来看看～</div>'; }
+    else {
+      var groups = {}, order = [];
+      list.forEach(function(w){
+        if (!groups[w.prize]){ groups[w.prize] = []; order.push(w.prize); }
+        groups[w.prize].push(w.nickname);
+      });
+      var html = "";
+      order.forEach(function(p){
+        html += '<div class="grp"><div class="pt">🎁 ' + esc(p) + '</div><div class="chips">' +
+          groups[p].map(function(n){ return '<span>' + esc(n) + '</span>'; }).join("") + '</div></div>';
+      });
+      body.innerHTML = html;
+    }
+    $("joinWinList").classList.remove("hidden");
+  }).catch(function(){ toast("名单加载失败，请稍后重试"); });
+});
+$("joinWinClose").addEventListener("click", function(){ $("joinWinList").classList.add("hidden"); });
+$("joinWinList").addEventListener("click", function(e){ if (e.target === this) this.classList.add("hidden"); });
+
+/* ---------- 大屏时钟 ---------- */
+setInterval(function(){
+  var d = new Date();
+  var hh = ("0" + d.getHours()).slice(-2), mm = ("0" + d.getMinutes()).slice(-2);
+  $("clock").textContent = hh + ":" + mm;
+}, 1000);
+(function(){ var d = new Date(); $("clock").textContent = ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2); })();
 
 /* ---------- 重置活动 ---------- */
 $("resetBtn").addEventListener("click", function(){
@@ -569,15 +668,23 @@ $("resetBtn").addEventListener("click", function(){
     $("rollName").textContent = "准备就绪";
     $("drawState").textContent = "已重置，等待同学们重新扫码";
     $("drawBtn").textContent = "开 始 抽 奖";
+    $("prizeTag").textContent = "等待设置奖项";
+    $("prizeTag").classList.remove("lv1", "lv2", "lv3");
+    $("prizeTag").classList.add("empty");
     toast("已重置，等待重新扫码");
   }).catch(function(){ toast("重置失败，请重试"); });
 });
 
 /* ---------- 撒花 ---------- */
-function confetti(cv){
+function confetti(cv, lv){
   var ctx = cv.getContext("2d");
   cv.width = innerWidth; cv.height = innerHeight;
-  var colors = ["#F7D774","#E8B84B","#07C160","#FF6B8A","#7AB8FF","#FFFFFF","#B36BFF"];
+  var palettes = {
+    lv1: ["#F7D774","#E8B84B","#FFF6DC","#FFFFFF","#FFD98A"],
+    lv2: ["#CDB8FF","#9B7BFF","#E4D6FF","#FFFFFF","#7AB8FF"],
+    lv3: ["#EDF2F9","#B9C6DA","#FFFFFF","#DDE6F2","#AEBFD6"]
+  };
+  var colors = palettes[lv] || palettes.lv1;
   var ps = [];
   for (var i = 0; i < 170; i++){
     ps.push({
