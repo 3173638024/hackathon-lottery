@@ -4,280 +4,397 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>腾讯AI百校行 · 黑客松分享会 现场抽奖</title>
-<script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
-<script>
-// SDK 加载失败时走 unpkg 镜像（同一个包，只是换个 CDN）
-if (typeof WorkBuddyCloud === 'undefined') {
-  document.write('<script src="https://unpkg.com/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"><\/script>');
-}
-</script>
 <script src="qrcode.js"></script>
 <style>
-  :root{
-    --bg:#0b1030; --bg2:#141a4a; --card:rgba(255,255,255,.06);
-    --line:rgba(255,255,255,.14); --txt:#eef1ff; --sub:#aab3e0;
-    --cyan:#39e6ff; --purple:#8b6cff; --green:#07c160; --gold:#ffd166;
-  }
-  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-  body{
-    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
-    background:radial-gradient(1200px 700px at 15% -10%,#2b2f7a 0%,transparent 60%),
-               radial-gradient(1000px 600px at 95% 110%,#123a6b 0%,transparent 55%),
-               linear-gradient(160deg,var(--bg),var(--bg2));
-    color:var(--txt);min-height:100vh;overflow-x:hidden;
-  }
-  .wrap{max-width:1200px;margin:0 auto;padding:24px}
-  .hidden{display:none!important}
+:root{
+  --bg0:#070B16; --bg1:#0E1526; --panel:rgba(255,255,255,.05); --panel2:rgba(255,255,255,.08);
+  --line:rgba(255,255,255,.10); --gold:#F7D774; --gold2:#E8B84B; --gold-deep:#8A6A1F;
+  --green:#07C160; --green2:#05A550; --red:#FF5A5F;
+  --txt:#EAF0FF; --sub:#8B96B8; --sub2:#5E6A8C;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Segoe UI",sans-serif;
+  background:var(--bg0); color:var(--txt); overflow:hidden;
+}
+/* ---------- 星空背景 ---------- */
+#stars{position:fixed; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(1.5px 1.5px at 12% 18%, rgba(255,255,255,.9), transparent 60%),
+    radial-gradient(1px 1px at 28% 62%, rgba(255,255,255,.7), transparent 60%),
+    radial-gradient(1.5px 1.5px at 47% 12%, rgba(247,215,116,.8), transparent 60%),
+    radial-gradient(1px 1px at 63% 78%, rgba(255,255,255,.6), transparent 60%),
+    radial-gradient(1.5px 1.5px at 78% 28%, rgba(255,255,255,.8), transparent 60%),
+    radial-gradient(1px 1px at 88% 55%, rgba(247,215,116,.6), transparent 60%),
+    radial-gradient(1.5px 1.5px at 8% 84%, rgba(255,255,255,.7), transparent 60%),
+    radial-gradient(1px 1px at 36% 90%, rgba(255,255,255,.5), transparent 60%),
+    radial-gradient(1px 1px at 93% 88%, rgba(255,255,255,.6), transparent 60%),
+    radial-gradient(ellipse 90% 60% at 50% -10%, #16203C 0%, transparent 60%),
+    linear-gradient(180deg, var(--bg1) 0%, var(--bg0) 70%);
+}
+#app{position:relative; z-index:1; height:100%}
+#previewWarn{display:none; position:relative; z-index:2; text-align:center; font-size:12px; letter-spacing:1px;
+  padding:9px 14px; background:rgba(255,90,95,.14); border-bottom:1px solid rgba(255,90,95,.35); color:#FFB3B5}
+.page{display:none; height:100%}
+.page.on{display:flex}
+.hidden{display:none !important}
 
-  /* ---------- 通用 ---------- */
-  .btn{
-    display:inline-flex;align-items:center;justify-content:center;gap:8px;
-    border:none;border-radius:14px;padding:14px 26px;font-size:18px;font-weight:600;
-    color:#fff;background:linear-gradient(135deg,var(--purple),#5a7bff);cursor:pointer;
-    box-shadow:0 8px 24px rgba(90,123,255,.35);transition:transform .12s,opacity .12s;
-  }
-  .btn:active{transform:scale(.97)}
-  .btn[disabled]{opacity:.45;cursor:not-allowed;box-shadow:none}
-  .btn.green{background:linear-gradient(135deg,#0aa84f,var(--green));box-shadow:0 8px 24px rgba(7,193,96,.35)}
-  .btn.ghost{background:transparent;border:1px solid var(--line);box-shadow:none;color:var(--sub);font-size:15px;padding:10px 18px}
-  .btn.gold{background:linear-gradient(135deg,#ff9f43,var(--gold));color:#3a2a00;box-shadow:0 8px 24px rgba(255,209,102,.3)}
-  input{
-    width:100%;background:rgba(255,255,255,.08);border:1px solid var(--line);border-radius:14px;
-    padding:15px 18px;font-size:20px;color:var(--txt);outline:none;text-align:center;
-  }
-  input::placeholder{color:rgba(170,179,224,.6)}
-  input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(57,230,255,.15)}
-  .tag{display:inline-block;padding:4px 12px;border-radius:999px;background:rgba(57,230,255,.14);
-       color:var(--cyan);font-size:13px;letter-spacing:1px}
+/* ================= 观众页 ================= */
+#pageJoin{flex-direction:column; align-items:center; justify-content:center; padding:24px}
+.join-card{
+  width:100%; max-width:400px; background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+  border:1px solid var(--line); border-radius:28px; padding:44px 32px 36px; text-align:center;
+  box-shadow:0 24px 80px rgba(0,0,0,.5); backdrop-filter:blur(8px);
+}
+.gift{width:88px; height:88px; margin:0 auto 18px; display:block; filter:drop-shadow(0 8px 24px rgba(247,215,116,.35))}
+.join-title{font-size:26px; font-weight:800; letter-spacing:1px}
+.join-sub{font-size:13px; color:var(--sub); margin-top:8px; line-height:1.7}
+.join-sub b{color:var(--gold); font-weight:600}
+#nickInput{
+  width:100%; margin-top:26px; padding:15px 18px; font-size:17px; text-align:center;
+  background:rgba(255,255,255,.06); border:1.5px solid var(--line); border-radius:14px;
+  color:var(--txt); outline:none; transition:border-color .2s;
+}
+#nickInput:focus{border-color:var(--green)}
+#nickInput::placeholder{color:var(--sub2)}
+#joinBtn{
+  width:100%; margin-top:14px; padding:15px; font-size:17px; font-weight:700; letter-spacing:2px;
+  background:linear-gradient(135deg,var(--green),var(--green2)); color:#fff; border:none; border-radius:14px;
+  cursor:pointer; box-shadow:0 8px 28px rgba(7,193,96,.35); transition:transform .12s, box-shadow .2s;
+}
+#joinBtn:active{transform:scale(.97)}
+#joinBtn:disabled{opacity:.55; box-shadow:none; cursor:default}
+#joinMsg{min-height:22px; margin-top:12px; font-size:14px; color:var(--sub)}
+#joinMsg.err{color:var(--red)}
+#joinMsg.ok{color:var(--green)}
+#joinDone{padding:8px 0 2px}
+#joinDone .tick{font-size:44px; line-height:1}
+#joinDone .who{font-size:24px; font-weight:800; color:var(--gold); margin-top:10px; letter-spacing:1px}
+#joinDone .tip{font-size:13px; color:var(--sub); margin-top:10px; line-height:1.8}
+.join-foot{margin-top:22px; font-size:11px; color:var(--sub2); letter-spacing:.5px; line-height:1.8}
+.pulse-num{display:inline-block}
+.pulse-num.bump{animation:bump .45s cubic-bezier(.34,1.56,.64,1)}
+@keyframes bump{0%{transform:scale(1)}40%{transform:scale(1.35); color:var(--gold)}100%{transform:scale(1)}}
 
-  /* ---------- 观众页 ---------- */
-  #joinPage{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-  .join-card{
-    width:100%;max-width:430px;background:var(--card);border:1px solid var(--line);
-    border-radius:26px;padding:34px 26px;text-align:center;backdrop-filter:blur(8px);
-    box-shadow:0 24px 60px rgba(0,0,0,.35);
-  }
-  .join-card h1{font-size:24px;line-height:1.35;margin:14px 0 6px}
-  .join-card .sub{color:var(--sub);font-size:14px;margin-bottom:26px}
-  .join-card .logo{width:74px;height:74px;border-radius:20px;background:linear-gradient(135deg,var(--purple),var(--cyan));
-    display:flex;align-items:center;justify-content:center;font-size:34px;margin:0 auto}
-  #joinMsg{min-height:24px;margin-top:14px;font-size:15px}
-  #joinMsg.err{color:#ff8a8a}
-  #joinMsg.ok{color:var(--green)}
-  .join-done .big{font-size:64px;line-height:1;margin:8px 0 14px}
-  .live-count{margin-top:22px;padding-top:18px;border-top:1px dashed var(--line);color:var(--sub);font-size:14px}
-  .live-count b{color:var(--cyan);font-size:22px;margin:0 4px}
+/* ================= 大屏页 ================= */
+#pageScreen{flex-direction:column}
+.screen-head{
+  display:flex; align-items:center; gap:14px; padding:16px 26px;
+  border-bottom:1px solid var(--line); background:rgba(7,11,22,.6); backdrop-filter:blur(8px);
+}
+.screen-head .logo{font-size:22px}
+.screen-head .t{font-size:16px; font-weight:700; letter-spacing:.5px}
+.screen-head .t small{display:block; font-size:11px; color:var(--sub); font-weight:400; margin-top:2px; letter-spacing:2px}
+.live{margin-left:auto; display:flex; align-items:center; gap:7px; padding:6px 14px;
+  border:1px solid rgba(255,90,95,.5); border-radius:999px; font-size:12px; font-weight:700; color:#FF8A8E; letter-spacing:2px}
+.live i{width:8px; height:8px; border-radius:50%; background:var(--red); animation:blink 1.2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+.head-count{display:flex; align-items:baseline; gap:6px; padding:6px 16px; background:var(--panel); border:1px solid var(--line); border-radius:999px}
+.head-count b{font-size:22px; font-weight:800; color:var(--gold); font-variant-numeric:tabular-nums}
+.head-count span{font-size:11px; color:var(--sub)}
 
-  /* ---------- 大屏页 ---------- */
-  #screenPage{min-height:100vh;display:flex;flex-direction:column;padding:20px 26px}
-  .scr-top{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
-  .scr-top h1{font-size:26px;letter-spacing:1px}
-  .scr-top .spacer{flex:1}
-  .count-pill{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:8px 20px;font-size:16px;color:var(--sub)}
-  .count-pill b{color:var(--cyan);font-size:24px;margin:0 6px}
-  .qr-box{background:#fff;border-radius:16px;padding:8px;line-height:0}
-  .qr-box img,.qr-box canvas{width:132px;height:132px;border-radius:8px}
-  .qr-cap{text-align:center;font-size:12px;color:var(--sub);margin-top:6px}
+.screen-main{flex:1; display:grid; grid-template-columns:1fr 372px; gap:18px; padding:18px 26px 22px; min-height:0}
 
-  .scr-main{flex:1;display:grid;grid-template-columns:1.55fr 1fr;gap:22px;margin-top:18px}
-  @media (max-width:900px){.scr-main{grid-template-columns:1fr}}
+/* 主舞台 */
+.stage{position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  background:radial-gradient(ellipse 80% 65% at 50% 42%, rgba(247,215,116,.10), rgba(255,255,255,.02) 60%);
+  border:1px solid var(--line); border-radius:26px; overflow:hidden; min-height:0}
+.stage .rays{position:absolute; inset:0; pointer-events:none;
+  background:conic-gradient(from 0deg at 50% 45%, transparent 0deg, rgba(247,215,116,.05) 6deg, transparent 12deg,
+    transparent 18deg, rgba(247,215,116,.05) 24deg, transparent 30deg, transparent 42deg, rgba(247,215,116,.04) 48deg, transparent 54deg,
+    transparent 66deg, rgba(247,215,116,.05) 72deg, transparent 78deg, transparent 90deg, rgba(247,215,116,.04) 96deg, transparent 102deg,
+    transparent 120deg, rgba(247,215,116,.05) 126deg, transparent 132deg, transparent 150deg, rgba(247,215,116,.04) 156deg, transparent 162deg,
+    transparent 180deg, rgba(247,215,116,.05) 186deg, transparent 192deg, transparent 210deg, rgba(247,215,116,.04) 216deg, transparent 222deg,
+    transparent 240deg, rgba(247,215,116,.05) 246deg, transparent 252deg, transparent 270deg, rgba(247,215,116,.04) 276deg, transparent 282deg,
+    transparent 300deg, rgba(247,215,116,.05) 306deg, transparent 312deg, transparent 330deg, rgba(247,215,116,.04) 336deg, transparent 342deg);
+  opacity:.7; animation:spin 26s linear infinite}
+@keyframes spin{to{transform:rotate(1turn)}}
+.prize-tag{
+  position:relative; padding:9px 30px; border-radius:999px; font-size:clamp(15px,1.6vw,20px); font-weight:800; letter-spacing:4px;
+  background:linear-gradient(135deg,var(--gold),var(--gold2)); color:#3A2A00;
+  box-shadow:0 6px 30px rgba(232,184,75,.4), inset 0 1px 0 rgba(255,255,255,.5);
+}
+.prize-tag.empty{background:var(--panel2); color:var(--sub); box-shadow:none; border:1px dashed var(--line)}
+.roll-box{position:relative; width:100%; display:flex; align-items:center; justify-content:center; min-height:clamp(90px,16vh,150px); margin:6px 0}
+#rollName{
+  font-size:clamp(44px,7.2vw,96px); font-weight:900; letter-spacing:3px; text-align:center; padding:0 30px;
+  background:linear-gradient(180deg,#FFF6DC 20%,var(--gold) 55%,#C99B2E 90%);
+  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:var(--gold);
+  filter:drop-shadow(0 6px 26px rgba(247,215,116,.35)); max-width:100%;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+#rollName.rolling{animation:jitter .09s infinite alternate}
+@keyframes jitter{from{transform:translateY(-3px) scale(1.01)}to{transform:translateY(3px) scale(.99)}}
+#drawState{font-size:clamp(14px,1.5vw,19px); color:var(--sub); letter-spacing:3px; min-height:26px}
+#drawState.hot{color:var(--gold); font-weight:700}
+.stage-deco{position:absolute; font-size:clamp(30px,4vw,52px); opacity:.9; filter:drop-shadow(0 6px 18px rgba(0,0,0,.4))}
+.stage-deco.l{left:4%; top:16%; animation:sway 3.4s ease-in-out infinite}
+.stage-deco.r{right:4%; top:16%; animation:sway 3.4s ease-in-out infinite reverse}
+.stage-deco.l2{left:9%; bottom:14%; animation:sway 4.1s .4s ease-in-out infinite}
+.stage-deco.r2{right:9%; bottom:14%; animation:sway 4.1s .4s ease-in-out infinite reverse}
+@keyframes sway{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(-14px) rotate(8deg)}}
 
-  .stage{
-    background:var(--card);border:1px solid var(--line);border-radius:24px;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;
-    padding:26px;min-height:52vh;position:relative;overflow:hidden;text-align:center;
-  }
-  .stage .hint{color:var(--sub);font-size:15px;margin-bottom:14px}
-  .roll-names{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;max-width:92%}
-  .roll-names span{
-    background:rgba(255,255,255,.09);border:1px solid var(--line);border-radius:14px;
-    padding:12px 20px;font-size:26px;font-weight:600;animation:pop .18s ease;
-  }
-  @keyframes pop{from{transform:scale(.86);opacity:.4}to{transform:scale(1);opacity:1}}
-  .stage.idle .big-emoji{font-size:76px;margin-bottom:10px}
-  .stage.drawing .roll-names span{background:linear-gradient(135deg,rgba(139,108,255,.35),rgba(57,230,255,.25));
-    border-color:var(--cyan);animation:blink .12s infinite alternate}
-  @keyframes blink{from{opacity:.75}to{opacity:1}}
+/* 右侧栏 */
+.side{display:flex; flex-direction:column; gap:14px; min-height:0}
+.card{background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:14px 16px}
+.card h3{font-size:12px; color:var(--sub); font-weight:600; letter-spacing:2px; margin-bottom:10px; display:flex; align-items:center; gap:6px}
+.qr-card{display:flex; gap:14px; align-items:center}
+.qr-card .qr{width:118px; height:118px; background:#fff; border-radius:12px; padding:7px; flex:none; display:flex; align-items:center; justify-content:center}
+.qr-card .qr img{width:100%; height:100%; image-rendering:pixelated}
+.qr-card .meta{flex:1; min-width:0}
+.qr-card .meta .n{font-size:34px; font-weight:900; color:var(--gold); line-height:1.1; font-variant-numeric:tabular-nums}
+.qr-card .meta .l{font-size:12px; color:var(--sub); margin-top:2px}
+.qr-card .meta .hint{font-size:11px; color:var(--sub2); margin-top:8px; line-height:1.6}
+.ctrl-row{display:flex; gap:8px}
+.ctrl-row input{
+  flex:1; min-width:0; padding:10px 12px; font-size:14px; background:rgba(255,255,255,.06);
+  border:1px solid var(--line); border-radius:10px; color:var(--txt); outline:none;
+}
+.ctrl-row input:focus{border-color:var(--gold)}
+.ctrl-row input#numInput{flex:0 0 64px; text-align:center}
+#drawBtn{
+  width:100%; margin-top:10px; padding:13px; font-size:16px; font-weight:800; letter-spacing:4px;
+  background:linear-gradient(135deg,var(--gold),var(--gold2)); color:#3A2A00; border:none; border-radius:12px;
+  cursor:pointer; box-shadow:0 8px 30px rgba(232,184,75,.35), inset 0 1px 0 rgba(255,255,255,.5);
+  animation:breathe 2.2s ease-in-out infinite; transition:transform .12s;
+}
+@keyframes breathe{0%,100%{box-shadow:0 8px 30px rgba(232,184,75,.3), inset 0 1px 0 rgba(255,255,255,.5)}50%{box-shadow:0 8px 46px rgba(232,184,75,.65), inset 0 1px 0 rgba(255,255,255,.5)}}
+#drawBtn:active{transform:scale(.97)}
+#drawBtn:disabled{animation:none; opacity:.5; cursor:default}
+.link-btn{background:none; border:none; color:var(--sub2); font-size:11px; cursor:pointer; padding:4px 0; letter-spacing:1px}
+.link-btn:hover{color:var(--sub)}
+.latest{flex:1; min-height:96px; display:flex; flex-direction:column}
+.latest-list{flex:1; overflow:hidden; display:flex; flex-direction:column; gap:6px}
+.latest-item{display:flex; align-items:center; gap:8px; font-size:13px; padding:7px 10px; background:rgba(255,255,255,.04); border-radius:9px; animation:slidein .35s cubic-bezier(.34,1.3,.64,1)}
+@keyframes slidein{from{opacity:0; transform:translateX(18px)}to{opacity:1; transform:none}}
+.latest-item .av{width:22px; height:22px; border-radius:50%; flex:none; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#fff}
+.latest-item .nm{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.latest-item .tm{margin-left:auto; font-size:10px; color:var(--sub2); flex:none}
+.winners-card{max-height:30%; display:flex; flex-direction:column}
+#winnerList{flex:1; overflow-y:auto; font-size:13px}
+#winnerList .empty{color:var(--sub2); font-size:12px; text-align:center; padding:14px 0}
+#winnerList .grp{margin-bottom:10px}
+#winnerList .grp .pt{font-size:11px; color:var(--gold); font-weight:700; letter-spacing:1px; margin-bottom:4px}
+#winnerList .chips{display:flex; flex-wrap:wrap; gap:5px}
+#winnerList .chip{padding:3px 10px; background:rgba(247,215,116,.12); border:1px solid rgba(247,215,116,.35); border-radius:999px; color:var(--gold); font-size:12px; font-weight:600}
 
-  .win-banner{display:none;width:100%}
-  .stage.result .win-banner{display:block;animation:pop .3s ease}
-  .win-banner .prize{font-size:20px;color:var(--gold);letter-spacing:2px;margin-bottom:10px}
-  .win-banner .names{display:flex;flex-wrap:wrap;gap:14px;justify-content:center}
-  .win-banner .names span{
-    font-size:40px;font-weight:800;padding:10px 26px;border-radius:16px;
-    background:linear-gradient(135deg,rgba(255,209,102,.22),rgba(255,159,67,.14));
-    border:1px solid rgba(255,209,102,.5);color:#ffe9b8;
-  }
-  .confetti{position:absolute;inset:0;pointer-events:none;overflow:hidden}
-  .confetti i{position:absolute;top:-12px;width:9px;height:14px;border-radius:2px;animation:fall linear forwards}
-  @keyframes fall{to{transform:translateY(115vh) rotate(540deg)}}
+/* 中奖弹层 */
+#winBanner{position:fixed; inset:0; z-index:50; display:flex; align-items:center; justify-content:center;
+  background:radial-gradient(circle at 50% 42%, rgba(247,215,116,.22), rgba(7,11,22,.90) 55%);
+  backdrop-filter:blur(10px); animation:fadein .3s}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+.win-card{
+  text-align:center; padding:52px 66px; border-radius:32px; max-width:min(760px,86vw);
+  background:linear-gradient(180deg, rgba(40,32,10,.92), rgba(14,18,34,.94));
+  border:2px solid rgba(247,215,116,.55);
+  box-shadow:0 0 120px rgba(232,184,75,.35), inset 0 1px 0 rgba(255,255,255,.15);
+  animation:pop .5s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes pop{from{transform:scale(.6); opacity:0}to{transform:scale(1); opacity:1}}
+.win-card .cup{font-size:64px; filter:drop-shadow(0 10px 30px rgba(247,215,116,.5))}
+.win-card .cong{font-size:15px; letter-spacing:6px; color:var(--gold); margin-top:10px; font-weight:700}
+#winPrize{font-size:clamp(22px,3vw,32px); font-weight:900; margin-top:8px; letter-spacing:1px}
+#winNames{margin-top:22px; display:flex; flex-wrap:wrap; gap:10px; justify-content:center; max-height:46vh; overflow:auto}
+#winNames .w{padding:10px 22px; border-radius:999px; font-size:clamp(17px,2.2vw,24px); font-weight:800;
+  background:linear-gradient(135deg, rgba(247,215,116,.95), rgba(232,184,75,.95)); color:#3A2A00;
+  box-shadow:0 8px 28px rgba(232,184,75,.4); animation:pop .45s backwards cubic-bezier(.34,1.56,.64,1)}
+#winNames .w:nth-child(2){animation-delay:.1s} #winNames .w:nth-child(3){animation-delay:.2s}
+#winNames .w:nth-child(4){animation-delay:.3s} #winNames .w:nth-child(5){animation-delay:.4s}
+#winNames .w:nth-child(6){animation-delay:.5s}
+.win-tip{margin-top:24px; font-size:12px; color:var(--sub); letter-spacing:2px}
+#confetti{position:fixed; inset:0; z-index:60; pointer-events:none}
+#toast{position:fixed; left:50%; bottom:9%; transform:translateX(-50%); z-index:80;
+  background:rgba(20,26,44,.95); border:1px solid var(--line); color:var(--txt);
+  padding:11px 22px; border-radius:12px; font-size:14px; box-shadow:0 12px 40px rgba(0,0,0,.5);
+  opacity:0; transition:opacity .25s, transform .25s; pointer-events:none; max-width:82vw; text-align:center}
+#toast.show{opacity:1; transform:translateX(-50%) translateY(-8px)}
+#netWarn{display:none; margin:0 26px 10px; padding:10px 16px; border-radius:12px; font-size:13px;
+  background:rgba(255,90,95,.12); border:1px solid rgba(255,90,95,.4); color:#FFB3B5}
 
-  .panel{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:22px;display:flex;flex-direction:column;gap:16px}
-  .panel h3{font-size:16px;color:var(--sub);letter-spacing:1px;font-weight:600}
-  .row{display:flex;gap:10px}
-  .row input{padding:12px 14px;font-size:17px}
-  .winners{flex:1;overflow:auto;max-height:34vh}
-  .winners .group{margin-bottom:14px}
-  .winners .group .g{color:var(--gold);font-size:14px;margin-bottom:6px}
-  .winners .chips{display:flex;flex-wrap:wrap;gap:8px}
-  .winners .chips span{background:rgba(255,255,255,.08);border:1px solid var(--line);border-radius:10px;
-    padding:6px 12px;font-size:15px}
-  .empty{color:var(--sub);font-size:14px;text-align:center;padding:20px 0}
-  .pool-ticker{margin-top:14px;color:var(--sub);font-size:13px;text-align:center;min-height:20px}
-  .banner{
-    position:fixed;left:50%;transform:translateX(-50%);bottom:26px;z-index:9;
-    background:rgba(20,26,74,.95);border:1px solid var(--line);border-radius:14px;
-    padding:12px 22px;font-size:14px;color:var(--sub);max-width:88vw;
-  }
-  .banner b{color:var(--gold)}
+@media (max-width:900px){
+  .screen-main{grid-template-columns:1fr; grid-template-rows:1fr auto; overflow:hidden}
+  .side{flex-direction:row; flex-wrap:wrap; max-height:38vh; overflow:hidden}
+  .side .card{flex:1; min-width:150px}
+  .qr-card .qr{width:84px; height:84px}
+}
 </style>
 </head>
 <body>
+<div id="stars"></div>
+<canvas id="confetti" class="hidden"></canvas>
+<div id="toast"></div>
 
-<!-- =============== 观众页：扫码参与 =============== -->
-<div id="joinPage">
-  <div class="join-card">
-    <div class="logo">🎁</div>
-    <div class="tag" style="margin-top:14px">腾讯AI百校行 · 黑客松分享会</div>
-    <h1>现场抽奖 · 扫码即参与</h1>
-    <div class="sub">填个昵称就能进抽奖池，中奖名单现场大屏公布</div>
-
-    <div id="joinForm">
-      <input id="nickInput" maxlength="12" placeholder="输入昵称（12字以内）" autocomplete="off">
+<div id="app">
+<div id="previewWarn">⚠️ 网页预览版 · 抽奖功能仅在活动现场可用，请扫描现场大屏二维码参与</div>
+<!-- ============ 观众页 ============ -->
+  <section id="pageJoin" class="page">
+    <div class="join-card">
+      <svg class="gift" viewBox="0 0 88 88" fill="none">
+        <defs>
+          <linearGradient id="gb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F7D774"/><stop offset="1" stop-color="#D9A93C"/></linearGradient>
+          <linearGradient id="gr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF7A6B"/><stop offset="1" stop-color="#E23E57"/></linearGradient>
+        </defs>
+        <path d="M20 34h48v40a6 6 0 0 1-6 6H26a6 6 0 0 1-6-6V34z" fill="url(#gr)"/>
+        <path d="M20 34h48v10H20v-10z" fill="url(#gb)"/>
+        <rect x="14" y="26" width="60" height="12" rx="4" fill="url(#gb)"/>
+        <path d="M44 26c-4-8-14-9-16-3s5 8 16 3z" fill="url(#gb)"/>
+        <path d="M44 26c4-8 14-9 16-3s-5 8-16 3z" fill="url(#gb)"/>
+        <circle cx="44" cy="24" r="4.5" fill="#FFF3D0"/>
+      </svg>
+      <div class="join-title">现场抽奖</div>
+      <div class="join-sub">腾讯AI百校行 · 黑客松分享会<br>留下你的昵称，<b>幸运大奖</b>说不定就是你</div>
+      <div id="joinForm">
+        <input id="nickInput" maxlength="12" placeholder="输入昵称，12 字以内" autocomplete="off">
+        <button id="joinBtn">加 入 抽 奖</button>
+      </div>
       <div id="joinMsg"></div>
-      <button class="btn green" id="joinBtn" style="width:100%;margin-top:8px">加入抽奖</button>
+      <div id="joinDone" class="hidden">
+        <div class="tick">🎉</div>
+        <div class="who" id="doneNick"></div>
+        <div class="tip">已加入抽奖池<br>请在现场等待开奖，大屏会念到你的名字</div>
+      </div>
+      <div class="join-foot">当前已有 <b class="pulse-num" id="joinCount">0</b> 位同学参与<br>主办：信息与软件工程学院研究生分会 | 协办：华东交通大学学生会</div>
     </div>
+  </section>
 
-    <div id="joinDone" class="join-done hidden">
-      <div class="big">🎉</div>
-      <h1>已加入抽奖池！</h1>
-      <div class="sub">昵称：<b id="doneNick" style="color:var(--cyan)"></b><br>请在现场等待开奖，大屏会念到你的名字</div>
+  <!-- ============ 大屏页 ============ -->
+  <section id="pageScreen" class="page">
+    <header class="screen-head">
+      <span class="logo">🎁</span>
+      <div class="t">腾讯AI百校行 · 黑客松分享会<small>LUCKY DRAW · 现场抽奖</small></div>
+      <div class="live"><i></i>LIVE</div>
+      <div class="head-count"><b id="scrCount">0</b><span>人已参与</span></div>
+    </header>
+    <div id="netWarn">⚠️ 云端连接不稳定，请检查网络后刷新；若持续失败请联系现场工作人员。</div>
+    <div class="screen-main">
+      <div class="stage">
+        <div class="rays"></div>
+        <span class="stage-deco l">🎉</span><span class="stage-deco r">🎊</span>
+        <span class="stage-deco l2">🧧</span><span class="stage-deco r2">✨</span>
+        <div class="prize-tag empty" id="prizeTag">等待设置奖项</div>
+        <div class="roll-box"><div id="rollName">准备就绪</div></div>
+        <div id="drawState">在右侧设置奖项，点击「开始抽奖」</div>
+      </div>
+      <aside class="side">
+        <div class="card qr-card">
+          <div class="qr" id="qrBox"></div>
+          <div class="meta">
+            <div class="n"><span id="scrCount2">0</span></div>
+            <div class="l">位同学已参与</div>
+            <div class="hint">📱 微信扫码 → 填昵称 → 加入抽奖</div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>🎯 奖项设置</h3>
+          <div class="ctrl-row">
+            <input id="prizeInput" maxlength="16" placeholder="奖项名称，如：三等奖">
+            <input id="numInput" type="number" min="1" max="20" value="1">
+          </div>
+          <button id="drawBtn">开 始 抽 奖</button>
+          <button class="link-btn" id="resetBtn">↺ 重置活动（清空参与名单）</button>
+        </div>
+        <div class="card latest">
+          <h3>📣 实时参与</h3>
+          <div class="latest-list" id="latestList"><div class="latest-item" style="opacity:.5"><span class="nm">等待同学们扫码…</span></div></div>
+        </div>
+        <div class="card winners-card">
+          <h3>🏆 中奖名单</h3>
+          <div id="winnerList"><div class="empty">还没有中奖者</div></div>
+        </div>
+      </aside>
     </div>
+  </section>
+</div>
 
-    <div class="live-count">当前已有 <b id="joinCount">0</b> 位同学参与</div>
+<!-- 中奖弹层 -->
+<div id="winBanner" class="hidden">
+  <div class="win-card">
+    <div class="cup">🏆</div>
+    <div class="cong">恭 喜 中 奖</div>
+    <div id="winPrize"></div>
+    <div id="winNames"></div>
+    <div class="win-tip">请中奖同学稍后凭昵称到舞台侧领取奖品</div>
   </div>
 </div>
 
-<!-- =============== 大屏页：主持端 =============== -->
-<div id="screenPage" class="hidden">
-  <div class="scr-top">
-    <div>
-      <h1>🎁 现场抽奖</h1>
-      <div class="qr-cap" style="text-align:left">腾讯AI百校行 · 黑客松分享会</div>
-    </div>
-    <div class="spacer"></div>
-    <div class="count-pill">参与人数<b id="scrCount">0</b></div>
-    <div>
-      <div class="qr-box" id="qrBox"></div>
-      <div class="qr-cap">手机扫码参与</div>
-    </div>
-    <button class="btn ghost" id="fsBtn">全屏</button>
-  </div>
-
-  <div class="scr-main">
-    <!-- 左：舞台 -->
-    <div class="stage idle" id="stage">
-      <div class="confetti" id="confetti"></div>
-      <div id="stageIdle">
-        <div class="big-emoji">🎰</div>
-        <div class="hint">设置奖项与人数，点击「开始抽奖」</div>
-        <div class="roll-names" id="poolPreview"></div>
-        <div class="pool-ticker" id="poolTicker"></div>
-      </div>
-      <div class="win-banner" id="winBanner">
-        <div class="prize" id="winPrize"></div>
-        <div class="names" id="winNames"></div>
-      </div>
-      <div class="roll-names hidden" id="rollNames"></div>
-    </div>
-
-    <!-- 右：控制台 -->
-    <div class="panel">
-      <h3>本轮设置</h3>
-      <div class="row">
-        <input id="prizeInput" placeholder="奖项名称，如：一等奖" maxlength="20">
-        <input id="numInput" type="number" min="1" max="20" value="1" style="max-width:110px">
-      </div>
-      <button class="btn gold" id="drawBtn" style="width:100%">开始抽奖</button>
-      <div style="display:flex;gap:10px">
-        <button class="btn ghost" id="againBtn" style="flex:1">同一奖项再抽一轮</button>
-        <button class="btn ghost" id="resetBtn" style="flex:1">重置活动</button>
-      </div>
-      <h3 style="margin-top:6px">中奖名单</h3>
-      <div class="winners" id="winnerList"><div class="empty">暂无中奖记录</div></div>
-    </div>
-  </div>
-</div>
-
-<div class="banner hidden" id="banner"></div>
-
+<script src="qrcode.js"></script>
 <script>
-/* ================== 配置（部署时由平台注入） ================== */
-var CONFIG = {
-  endpoint: "https://hackathon-lottery-24599.app.workbuddy.host",
-  oauthRelayBaseUrl: "https://www.workbuddy.cn/v2/as/genie-baas/oauth",
-  publishableKey: "wbpk_11SzlzluuOWdFnthivMArv_5DmpUvjqn9dvER1on31gKXxAEpIz4VHP"
-};
-var CONFIG_OK = CONFIG.endpoint.indexOf("__") === -1;
-
-/* ================== 工具 ================== */
+/* ================= 工具 ================= */
 function $(id){ return document.getElementById(id); }
-function show(id){ $(id).classList.remove("hidden"); }
-function hide(id){ $(id).classList.add("hidden"); }
-function toast(msg, ms){
-  var b = $("banner"); b.innerHTML = msg; b.classList.remove("hidden");
-  clearTimeout(b._t); b._t = setTimeout(function(){ b.classList.add("hidden"); }, ms || 3200);
-}
-function shuffle(arr){
-  var a = arr.slice();
-  for (var i = a.length - 1; i > 0; i--){
-    var j = Math.floor(Math.random() * (i + 1));
-    var t = a[i]; a[i] = a[j]; a[j] = t;
-  }
-  return a;
-}
 function esc(s){ return String(s).replace(/[&<>"']/g, function(c){
   return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
-
-/* ================== 云端 ================== */
-var cloud = null;
-function initCloud(){
-  if (!CONFIG_OK) { toast("⚠️ 应用尚未完成部署配置，请联系主办方", 999999); return false; }
-  if (typeof WorkBuddyCloud === "undefined"){ toast("⚠️ 网络异常，二维码库/云服务加载失败，请刷新重试", 999999); return false; }
-  cloud = WorkBuddyCloud.createWorkBuddyCloud({
-    endpoint: CONFIG.endpoint,
-    oauthRelayBaseUrl: CONFIG.oauthRelayBaseUrl,
-    publishableKey: CONFIG.publishableKey
-  });
-  return true;
+var toastTimer = null;
+function toast(msg, ms){
+  var t = $("toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(toastTimer); toastTimer = setTimeout(function(){ t.classList.remove("show"); }, ms || 2600);
 }
+function bumpEl(el){ el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump"); }
 
-/* 当前批次：state 表里 id 最大的那一行 */
+/* ================= 云端（自适应：本地代理 / 公网直连） ================= */
+var API = (function(){
+  var h = location.hostname;
+  var isLocal = h === "localhost" || h === "127.0.0.1" ||
+    /^192\.168\./.test(h) || /^10\./.test(h) || /^172\.(1[6-9]|2\d|3[01])\./.test(h) ||
+    /\.(lhr\.life|localhost\.run|trycloudflare\.com|cpolar\.(top|cn)|ngrok\.(io|free\.app))$/.test(h);
+  var base = isLocal
+    ? "/api/db"
+    : "https://hackathon-lottery-24599.app.workbuddy.host/.cloud/database/rest";
+  function req(path, opts){
+    return fetch(base + path, opts || {}).then(function(r){
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.text().then(function(t){
+        if (!t || !t.trim()) return null;
+        try { return JSON.parse(t); } catch (e) { return null; }
+      });
+    });
+  }
+  return {
+    isLocal: isLocal,
+    select: function(table, qs){ return req("/" + table + (qs ? "?" + qs : ""), {headers:{"Accept":"application/json"}}); },
+    insert: function(table, obj){ return req("/" + table, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(obj)}); }
+  };
+})();
+
+/* ================= 数据 ================= */
 function getBatch(){
-  return cloud.database.from("lottery_state").select("batch").order("id", {ascending:false}).limit(1)
-    .then(function(r){ if (r.error) throw r.error; return (r.data && r.data[0]) ? r.data[0].batch : 1; });
+  return API.select("lottery_state", "select=batch&order=id.desc&limit=1")
+    .then(function(j){ return (j && j[0]) ? j[0].batch : 1; });
 }
 function getPool(batch){
-  return cloud.database.from("lottery_pool").select("nickname")
-    .eq("batch", batch).order("id", {ascending:true})
-    .then(function(r){ if (r.error) throw r.error; return (r.data||[]).map(function(x){return x.nickname;}); });
+  return API.select("lottery_pool", "select=nickname&batch=eq." + batch + "&order=id.asc")
+    .then(function(j){ return (j || []).map(function(x){ return x.nickname; }); });
 }
 function getWinnerNicks(){
-  return cloud.database.from("lottery_winners").select("nickname")
-    .then(function(r){ if (r.error) throw r.error; return (r.data||[]).map(function(x){return x.nickname;}); });
+  return API.select("lottery_winners", "select=nickname")
+    .then(function(j){ return (j || []).map(function(x){ return x.nickname; }); });
 }
-function getWinners(){
-  return cloud.database.from("lottery_winners").select("prize,nickname")
-    .order("id", {ascending:true})
-    .then(function(r){ if (r.error) throw r.error; return r.data || []; });
+function getWinners(batch){
+  return API.select("lottery_winners", "select=prize,nickname&batch=eq." + batch + "&order=id.asc")
+    .then(function(j){ return j || []; });
 }
 
-/* ================== 观众页 ================== */
+/* ================= 路由 ================= */
+function route(){
+  var h = location.hash || "#/join";
+  var join = h.indexOf("join") > -1;
+  $("pageJoin").classList.toggle("on", join);
+  $("pageScreen").classList.toggle("on", !join);
+  if (!API.isLocal){
+    $("previewWarn").style.display = "block";
+    if (!join) $("netWarn").style.display = "block";
+  }
+  if (join) refreshJoinCount(); else { buildQR(); startScreenLoop(); }
+}
+window.addEventListener("hashchange", route);
+
+/* ================= 观众页 ================= */
 var joined = false;
 function refreshJoinCount(){
-  if (!cloud || joined) return;
-  getBatch().then(function(b){ return getPool(b); }).then(function(list){
-    $("joinCount").textContent = list.length;
+  if (joined) return;
+  getBatch().then(getPool).then(function(list){
+    var el = $("joinCount");
+    if (el.textContent !== String(list.length)){ el.textContent = list.length; bumpEl(el); }
   }).catch(function(){});
 }
 function doJoin(){
@@ -287,222 +404,211 @@ function doJoin(){
   if (nick.length > 12){ msg.textContent = "昵称太长啦（12字以内）"; msg.className = "err"; return; }
   msg.textContent = "正在加入…"; msg.className = "";
   $("joinBtn").disabled = true;
-
   getBatch().then(function(batch){
-    return cloud.database.from("lottery_pool").select("id").eq("batch", batch).eq("nickname", nick).limit(1)
-      .then(function(r){
-        if (r.error) throw r.error;
-        if (r.data && r.data.length){ return {dup:true}; }
-        return cloud.database.from("lottery_pool").insert({batch:batch, nickname:nick})
-          .then(function(r2){
-            if (r2.error) throw r2.error;
-            return {dup:false, batch:batch};
+    return API.select("lottery_pool", "select=id&batch=eq." + batch + "&nickname=eq." + encodeURIComponent(nick) + "&limit=1")
+      .then(function(j){
+        if (j && j.length){ msg.textContent = "这个昵称已经在池子里啦，换一个试试"; msg.className = "err"; $("joinBtn").disabled = false; return; }
+        return API.insert("lottery_pool", {batch: batch, nickname: nick}).then(function(){
+          joined = true;
+          $("joinForm").classList.add("hidden");
+          msg.textContent = ""; msg.className = "";
+          $("doneNick").textContent = nick;
+          $("joinDone").classList.remove("hidden");
+          getPool(batch).then(function(list){
+            $("joinCount").textContent = list.length; bumpEl($("joinCount"));
           });
+        });
       });
-  }).then(function(res){
-    if (res.dup){
-      msg.textContent = "这个昵称已经在池子里啦，换一个试试"; msg.className = "err";
-      $("joinBtn").disabled = false; return;
-    }
-    joined = true;
-    $("doneNick").textContent = nick;
-    hide("joinForm"); show("joinDone");
-    $("joinCount").textContent = parseInt($("joinCount").textContent || "0", 10) + 1;
-    msg.textContent = "";
-  }).catch(function(e){
-    msg.textContent = "加入失败，请检查网络后重试"; msg.className = "err";
-    $("joinBtn").disabled = false;
+  }).catch(function(){
+    msg.textContent = "加入失败，请检查网络后重试"; msg.className = "err"; $("joinBtn").disabled = false;
   });
 }
 $("joinBtn").addEventListener("click", doJoin);
 $("nickInput").addEventListener("keydown", function(e){ if (e.key === "Enter") doJoin(); });
 
-/* ================== 大屏页 ================== */
-var drawing = false, currentBatch = 1, lastPrize = "", lastNum = 1;
-
-function makeQR(){
+/* ================= 大屏页 ================= */
+var screenLoop = null, lastCount = 0, lastLatest = "";
+function buildQR(){
+  if (typeof qrcode === "undefined"){ $("qrBox").innerHTML = '<div style="color:#999;font-size:11px;text-align:center">二维码库加载失败<br>请刷新</div>'; return; }
   var url = location.origin + location.pathname + "#/join";
-  var box = $("qrBox"); box.innerHTML = "";
-  try{
-    var qr = qrcode(0, "M"); qr.addData(url); qr.make();
-    var img = document.createElement("img");
-    img.src = qr.createDataURL(10, 1);
-    img.alt = "扫码参与";
-    box.appendChild(img);
-  }catch(e){
-    box.innerHTML = '<div style="width:132px;height:132px;display:flex;align-items:center;justify-content:center;color:#333;font-size:12px;text-align:center;padding:6px">二维码生成失败<br>请直接访问<br>' + esc(url) + '</div>';
-  }
+  var qr = qrcode(0, "M");
+  qr.addData(url); qr.make();
+  var img = document.createElement("img");
+  img.src = qr.createDataURL(4, 2);
+  img.alt = "扫码参与抽奖";
+  $("qrBox").innerHTML = ""; $("qrBox").appendChild(img);
 }
-
-function renderWinners(list){
-  var el = $("winnerList");
-  if (!list.length){ el.innerHTML = '<div class="empty">暂无中奖记录</div>'; return; }
-  var groups = {}, order = [];
-  list.forEach(function(w){
-    if (!groups[w.prize]){ groups[w.prize] = []; order.push(w.prize); }
-    groups[w.prize].push(w.nickname);
-  });
-  el.innerHTML = order.map(function(p){
-    return '<div class="group"><div class="g">🏆 ' + esc(p) + '</div><div class="chips">' +
-      groups[p].map(function(n){ return "<span>" + esc(n) + "</span>"; }).join("") + '</div></div>';
-  }).join("");
+function avatarColor(name){
+  var colors = ["#07C160","#5B8CFF","#F7A93B","#B36BFF","#FF6B8A","#2FC4C9","#8BC34A","#FF8A5B"];
+  var n = 0; for (var i = 0; i < name.length; i++) n = (n + name.charCodeAt(i)) % 9973;
+  return colors[n % colors.length];
 }
-
-function refreshScreen(){
-  if (!cloud || drawing) return;
-  Promise.all([getBatch(), getWinners()]).then(function(res){
-    currentBatch = res[0];
-    $("scrCount").textContent = "";
-    return getPool(currentBatch).then(function(pool){
-      $("scrCount").textContent = pool.length;
-      if (!drawing){
-        var recent = pool.slice(-10);
-        $("poolPreview").innerHTML = recent.map(function(n){ return "<span>" + esc(n) + "</span>"; }).join("") ||
-          '<span style="background:none;border:none;color:var(--sub)">等待同学扫码…</span>';
-        $("poolTicker").textContent = pool.length ? "最新加入：" + esc(recent[recent.length-1]) : "";
+function startScreenLoop(){
+  if (screenLoop) return;
+  var tick = function(){
+    getBatch().then(function(b){ return getPool(b); }).then(function(list){
+      $("scrCount").textContent = list.length;
+      $("scrCount2").textContent = list.length;
+      if (list.length !== lastCount){ lastCount = list.length; bumpEl($("scrCount")); }
+      var latest = list.slice(-3).reverse().join("|");
+      if (latest !== lastLatest){
+        lastLatest = latest;
+        var html = "";
+        var now = new Date();
+        var hh = ("0" + now.getHours()).slice(-2), mm = ("0" + now.getMinutes()).slice(-2);
+        list.slice(-3).reverse().forEach(function(n, i){
+          html += '<div class="latest-item" style="animation-delay:' + (i * 0.06) + 's">' +
+            '<span class="av" style="background:' + avatarColor(n) + '">' + esc(n.charAt(0)) + '</span>' +
+            '<span class="nm">' + esc(n) + '</span>' +
+            '<span class="tm">' + (i === 0 ? hh + ":" + mm : "") + '</span></div>';
+        });
+        if (!html) html = '<div class="latest-item" style="opacity:.5"><span class="nm">等待同学们扫码…</span></div>';
+        $("latestList").innerHTML = html;
       }
-      renderWinners(res[1]);
-    });
-  }).catch(function(){});
+    }).catch(function(){ $("netWarn").style.display = "block"; });
+    getBatch().then(function(b){ return getWinners(b); }).then(function(list){
+      if (!list.length){ $("winnerList").innerHTML = '<div class="empty">还没有中奖者</div>'; return; }
+      var groups = {}, order = [];
+      list.forEach(function(w){
+        if (!groups[w.prize]){ groups[w.prize] = []; order.push(w.prize); }
+        groups[w.prize].push(w.nickname);
+      });
+      var html = "";
+      order.forEach(function(p){
+        html += '<div class="grp"><div class="pt">🎁 ' + esc(p) + '</div><div class="chips">' +
+          groups[p].map(function(n){ return '<span class="chip">' + esc(n) + '</span>'; }).join("") + '</div></div>';
+      });
+      $("winnerList").innerHTML = html;
+    }).catch(function(){});
+  };
+  tick();
+  screenLoop = setInterval(tick, 3000);
 }
 
-function confetti(){
-  var box = $("confetti"); box.innerHTML = "";
-  var colors = ["#ffd166","#39e6ff","#8b6cff","#07c160","#ff8a8a"];
-  for (var i = 0; i < 70; i++){
-    var i2 = document.createElement("i");
-    i2.style.left = Math.random() * 100 + "%";
-    i2.style.background = colors[i % colors.length];
-    i2.style.animationDuration = (1.6 + Math.random() * 1.8) + "s";
-    i2.style.animationDelay = (Math.random() * 0.6) + "s";
-    box.appendChild(i2);
-  }
-  setTimeout(function(){ box.innerHTML = ""; }, 4200);
-}
-
-function doDraw(){
-  if (drawing) return;
-  if (!cloud){ toast("⚠️ 云服务未就绪，请刷新页面"); return; }
+/* ---------- 抽奖 ---------- */
+var rolling = false;
+function draw(){
+  if (rolling) return;
   var prize = $("prizeInput").value.trim();
-  var num = parseInt($("numInput").value || "1", 10);
-  if (!prize){ toast("先填写奖项名称，如：一等奖"); return; }
-  if (!num || num < 1){ toast("抽取人数至少为 1"); return; }
+  var num = parseInt($("numInput").value, 10);
+  if (!prize){ toast("先填写奖项名称，如：三等奖"); $("prizeInput").focus(); return; }
+  if (!num || num < 1){ toast("中奖人数至少 1 人"); return; }
+  if (num > 20){ toast("单轮最多 20 人"); return; }
+  rolling = true;
+  $("drawBtn").disabled = true;
+  $("prizeTag").textContent = prize;
+  $("prizeTag").classList.remove("empty");
+  $("drawState").textContent = "🎰 抽奖中，祝你好运…";
+  $("drawState").classList.add("hot");
+  $("rollName").classList.add("rolling");
+  $("winBanner").classList.add("hidden");
 
-  drawing = true;
-  $("drawBtn").disabled = true; $("againBtn").disabled = true;
-  var stage = $("stage");
-  stage.className = "stage drawing";
-  $("winBanner").style.display = "none";
-  show("rollNames");
-  var roll = $("rollNames");
-
-  Promise.all([getBatch(), getPool(currentBatch), getWinnerNicks()]).then(function(res){
-    var batch = res[0], pool = res[1], won = {};
-    res[2].forEach(function(n){ won[n] = 1; });
-    var candidates = pool.filter(function(n){ return !won[n]; });
-    if (!candidates.length){
-      drawing = false;
-      stage.className = "stage idle";
-      hide("rollNames");
-      $("drawBtn").disabled = false; $("againBtn").disabled = false;
-      toast("池子里没有可抽的同学了（可能都中过奖）");
-      return;
-    }
-    if (num > candidates.length){
-      num = candidates.length;
-      $("numInput").value = num;
-      toast("剩余候选不足，本轮抽取 " + num + " 人");
-    }
-
-    // 滚动动画
-    var tick = 0;
-    var timer = setInterval(function(){
-      var showN = shuffle(candidates).slice(0, Math.min(num, 6));
-      roll.innerHTML = showN.map(function(n){ return "<span>" + esc(n) + "</span>"; }).join("");
-      if (++tick > 26){
-        clearInterval(timer);
-        var winners = shuffle(candidates).slice(0, num);
-        cloud.database.from("lottery_winners")
-          .insert(winners.map(function(n){ return {batch:batch, prize:prize, nickname:n}; }))
-          .then(function(r){
-            if (r.error) throw r.error;
-            lastPrize = prize; lastNum = num;
-            stage.className = "stage result";
-            hide("rollNames");
-            $("winPrize").textContent = "🏆 " + prize;
-            $("winNames").innerHTML = winners.map(function(n){ return "<span>" + esc(n) + "</span>"; }).join("");
-            $("winBanner").style.display = "block";
-            confetti();
-            refreshScreen();
-          })
-          .catch(function(){ toast("开奖失败，请重试（未写入中奖名单）"); stage.className = "stage idle"; hide("rollNames"); })
-          .then(function(){
-            drawing = false;
-            $("drawBtn").disabled = false; $("againBtn").disabled = false;
-          });
+  getBatch().then(function(batch){
+    return Promise.all([getPool(batch), getWinnerNicks()]).then(function(r){
+      var pool = r[0], won = r[1];
+      var candidates = pool.filter(function(n){ return won.indexOf(n) < 0; });
+      if (!candidates.length){
+        rolling = false; $("drawBtn").disabled = false;
+        $("rollName").classList.remove("rolling");
+        $("drawState").textContent = "没有可抽的同学了（都已中奖）";
+        $("drawState").classList.remove("hot");
+        toast(pool.length ? "所有同学都已中奖啦" : "还没有同学扫码参与");
+        return;
       }
-    }, 110);
+      var pick = [];
+      var c = candidates.slice();
+      for (var i = 0; i < num && c.length; i++){
+        pick.push(c.splice(Math.random() * c.length | 0, 1)[0]);
+      }
+      /* 滚动动画 3 秒 */
+      var t0 = Date.now();
+      var timer = setInterval(function(){
+        $("rollName").textContent = candidates[Math.random() * candidates.length | 0];
+      }, 70);
+      setTimeout(function(){
+        clearInterval(timer);
+        $("rollName").classList.remove("rolling");
+        $("rollName").textContent = pick[0];
+        $("drawState").textContent = "🎊 恭喜以上 " + pick.length + " 位同学！";
+        /* 落库 */
+        API.insert("lottery_winners", pick.map(function(n){ return {batch: batch, prize: prize, nickname: n}; }))
+          .then(function(){
+            showWin(prize, pick);
+            if (screenLoop){ /* 立即刷新名单 */ }
+          })
+          .catch(function(){ toast("中奖名单写入失败，请手动记录后重试"); });
+        rolling = false;
+        $("drawBtn").disabled = false;
+        $("drawBtn").textContent = "再 抽 一 轮";
+      }, 3000);
+    });
   }).catch(function(){
-    drawing = false; stage.className = "stage idle"; hide("rollNames");
-    $("drawBtn").disabled = false; $("againBtn").disabled = false;
-    toast("读取抽奖池失败，请检查网络");
+    rolling = false; $("drawBtn").disabled = false;
+    $("rollName").classList.remove("rolling");
+    $("drawState").textContent = "网络异常，请重试";
+    $("drawState").classList.remove("hot");
   });
 }
+function showWin(prize, pick){
+  $("winPrize").textContent = prize;
+  $("winNames").innerHTML = pick.map(function(n){ return '<span class="w">' + esc(n) + '</span>'; }).join("");
+  $("winBanner").classList.remove("hidden");
+  var cv = $("confetti"); cv.classList.remove("hidden");
+  confetti(cv);
+  setTimeout(function(){ $("winBanner").classList.add("hidden"); }, 6000);
+}
+$("drawBtn").addEventListener("click", draw);
 
-$("drawBtn").addEventListener("click", doDraw);
-$("againBtn").addEventListener("click", function(){
-  $("prizeInput").value = lastPrize || $("prizeInput").value;
-  $("numInput").value = lastNum || 1;
-  $("stage").className = "stage idle";
-  $("winBanner").style.display = "none";
-  doDraw();
-});
+/* ---------- 重置活动 ---------- */
 $("resetBtn").addEventListener("click", function(){
-  if (!cloud) return;
-  if (!confirm("重置活动？\n\n将清空当前大屏上的参与人数与中奖名单显示（历史数据保留在后台），所有人需重新扫码参与。\n\n确定要重置吗？")) return;
+  if (!confirm("重置活动？\n\n将清空当前参与名单与大屏计数（历史中奖记录保留），所有人需重新扫码。")) return;
   getBatch().then(function(b){
-    return cloud.database.from("lottery_state").insert({batch: b + 1, note: "reset"});
+    return API.insert("lottery_state", {batch: b + 1, note: "reset"});
   }).then(function(){
-    $("stage").className = "stage idle";
-    $("winBanner").style.display = "none";
-    $("winnerList").innerHTML = '<div class="empty">暂无中奖记录</div>';
-    $("scrCount").textContent = "0";
-    toast("已重置，等待新一批同学扫码参与");
-    refreshScreen();
+    lastCount = -1; lastLatest = "";
+    $("rollName").textContent = "准备就绪";
+    $("drawState").textContent = "已重置，等待同学们重新扫码";
+    $("drawBtn").textContent = "开 始 抽 奖";
+    toast("已重置，等待重新扫码");
   }).catch(function(){ toast("重置失败，请重试"); });
 });
-$("fsBtn").addEventListener("click", function(){
-  if (document.fullscreenElement){ document.exitFullscreen(); }
-  else if (document.documentElement.requestFullscreen){ document.documentElement.requestFullscreen(); }
-});
 
-/* ================== 路由 ================== */
-function route(){
-  var h = location.hash || "#/join";
-  if (h.indexOf("screen") > -1){
-    hide("joinPage"); show("screenPage");
-    document.title = "现场抽奖 · 大屏";
-    if (!window._screenInited){
-      window._screenInited = true;
-      makeQR();
-      setInterval(refreshScreen, 2500);
-      refreshScreen();
-    }
-  }else{
-    hide("screenPage"); show("joinPage");
-    document.title = "腾讯AI百校行 · 黑客松分享会 现场抽奖";
-    if (!window._joinInited){
-      window._joinInited = true;
-      setInterval(refreshJoinCount, 3000);
-      refreshJoinCount();
-    }
+/* ---------- 撒花 ---------- */
+function confetti(cv){
+  var ctx = cv.getContext("2d");
+  cv.width = innerWidth; cv.height = innerHeight;
+  var colors = ["#F7D774","#E8B84B","#07C160","#FF6B8A","#7AB8FF","#FFFFFF","#B36BFF"];
+  var ps = [];
+  for (var i = 0; i < 170; i++){
+    ps.push({
+      x: Math.random() * cv.width, y: -30 - Math.random() * cv.height * 0.6,
+      w: 6 + Math.random() * 7, h: 9 + Math.random() * 9,
+      c: colors[i % colors.length],
+      vx: -1.6 + Math.random() * 3.2, vy: 2 + Math.random() * 3.4,
+      rot: Math.random() * Math.PI, vr: -0.12 + Math.random() * 0.24
+    });
   }
+  var t0 = Date.now();
+  (function frame(){
+    var life = Date.now() - t0;
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    for (var i = 0; i < ps.length; i++){
+      var p = ps[i];
+      p.x += p.vx; p.y += p.vy; p.vy += 0.025; p.rot += p.vr;
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+      ctx.globalAlpha = life > 3200 ? Math.max(0, (4200 - life) / 1000) : 1;
+      ctx.fillStyle = p.c;
+      ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      ctx.restore();
+    }
+    if (life < 4200) requestAnimationFrame(frame);
+    else { ctx.clearRect(0, 0, cv.width, cv.height); cv.classList.add("hidden"); }
+  })();
 }
-window.addEventListener("hashchange", route);
 
-/* ================== 启动 ================== */
-if (initCloud()){ route(); }
-else { route(); }
+/* ================= 启动 ================= */
+route();
+setInterval(function(){ if (location.hash.indexOf("join") > -1) refreshJoinCount(); }, 5000);
 </script>
 </body>
 </html>
