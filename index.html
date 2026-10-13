@@ -169,6 +169,19 @@ body{
 }
 #rollName.rolling{animation:jitter .09s infinite alternate}
 @keyframes jitter{from{transform:translateY(-3px) scale(1.01)}to{transform:translateY(3px) scale(.99)}}
+/* 多人中奖：中间网格排开显示 */
+.roll-grid{display:none; flex-wrap:wrap; gap:clamp(8px,1vw,16px); justify-content:center; align-items:center; width:100%; max-width:min(1100px,86vw)}
+.roll-grid.rolling .roll-cell{animation:jitter .09s infinite alternate}
+.roll-cell{
+  min-width:clamp(96px,9vw,170px); padding:clamp(6px,.9vh,12px) clamp(14px,1.6vw,28px);
+  border-radius:clamp(12px,1.4vw,20px); text-align:center;
+  font-size:clamp(20px,2.1vw,38px); font-weight:900; letter-spacing:2px;
+  color:var(--gold); background:linear-gradient(180deg,rgba(247,215,116,.14),rgba(247,215,116,.05));
+  border:1px solid rgba(247,215,116,.4); box-shadow:0 6px 26px rgba(247,215,116,.14);
+  word-break:break-all; line-height:1.25;
+}
+.roll-cell.pop{opacity:0; transform:scale(.5); animation:pop .38s cubic-bezier(.2,1.4,.4,1) forwards}
+@keyframes pop{to{opacity:1; transform:scale(1)}}
 #drawState{font-size:clamp(14px,1.5vw,19px); color:var(--sub); letter-spacing:3px; min-height:26px}
 #drawState.hot{color:var(--gold); font-weight:700}
 .stage-deco{position:absolute; font-size:clamp(30px,4vw,52px); opacity:.9; filter:drop-shadow(0 6px 18px rgba(0,0,0,.4))}
@@ -318,7 +331,7 @@ body{
         <span class="stage-deco l">🎉</span><span class="stage-deco r">🎊</span>
         <span class="stage-deco l2">🧧</span><span class="stage-deco r2">✨</span>
         <div class="prize-tag empty" id="prizeTag">等待设置奖项</div>
-        <div class="roll-box"><div id="rollName">准备就绪</div></div>
+        <div class="roll-box"><div id="rollName">准备就绪</div><div class="roll-grid" id="rollGrid"></div></div>
         <div id="drawState">在右侧设置奖项，点击「开始抽奖」</div>
       </div>
       <aside class="side">
@@ -565,8 +578,29 @@ function draw(){
   $("prizeTag").classList.add(prizeLevel(prize));
   $("drawState").textContent = "🎰 抽奖中，祝你好运…";
   $("drawState").classList.add("hot");
-  $("rollName").classList.add("rolling");
   $("winBanner").classList.add("hidden");
+  /* 多人中奖：中间区域用网格把名额全部排开 */
+  var rollGrid = $("rollGrid"), rollCells = [];
+  if (num > 1){
+    $("rollName").style.display = "none";
+    $("rollName").classList.remove("rolling");
+    rollGrid.style.display = "flex";
+    rollGrid.classList.add("rolling");
+    rollGrid.innerHTML = "";
+    for (var gi = 0; gi < num; gi++){
+      var gc = document.createElement("div");
+      gc.className = "roll-cell";
+      gc.textContent = "？";
+      rollGrid.appendChild(gc);
+      rollCells.push(gc);
+    }
+  } else {
+    rollGrid.style.display = "none";
+    rollGrid.innerHTML = "";
+    rollGrid.classList.remove("rolling");
+    $("rollName").style.display = "";
+    $("rollName").classList.add("rolling");
+  }
 
   getBatch().then(function(batch){
     return Promise.all([getPool(batch), getWinnerNicks()]).then(function(r){
@@ -575,6 +609,8 @@ function draw(){
       if (!candidates.length){
         rolling = false; $("drawBtn").disabled = false;
         $("rollName").classList.remove("rolling");
+        $("rollGrid").classList.remove("rolling");
+        if (num > 1){ $("rollGrid").style.display = "none"; $("rollName").style.display = ""; $("rollName").textContent = "均已中奖"; }
         $("drawState").textContent = "没有可抽的同学了（都已中奖）";
         $("drawState").classList.remove("hot");
         toast(pool.length ? "所有同学都已中奖啦" : "还没有同学扫码参与");
@@ -588,13 +624,30 @@ function draw(){
       /* 滚动动画 3 秒 */
       var t0 = Date.now();
       var timer = setInterval(function(){
-        $("rollName").textContent = candidates[Math.random() * candidates.length | 0];
+        if (num > 1){
+          for (var ci = 0; ci < rollCells.length; ci++){
+            rollCells[ci].textContent = candidates[Math.random() * candidates.length | 0];
+          }
+        } else {
+          $("rollName").textContent = candidates[Math.random() * candidates.length | 0];
+        }
       }, 70);
       setTimeout(function(){
         clearInterval(timer);
-        $("rollName").classList.remove("rolling");
-        $("rollName").textContent = pick[0];
-        $("drawState").textContent = "🎊 恭喜以上 " + pick.length + " 位同学！";
+        if (num > 1){
+          rollGrid.classList.remove("rolling");
+          /* 奖数比可抽人数多时，移除多余空格子 */
+          for (var xi = rollCells.length - 1; xi >= pick.length; xi--){ rollCells[xi].remove(); }
+          for (var ri = 0; ri < rollCells.length; ri++){
+            rollCells[ri].textContent = pick[ri];
+            rollCells[ri].style.animationDelay = (ri * 0.07) + "s";
+            rollCells[ri].classList.add("pop");
+          }
+        } else {
+          $("rollName").classList.remove("rolling");
+          $("rollName").textContent = pick[0];
+        }
+        $("drawState").textContent = "🎊 恭喜" + (pick.length > 1 ? "以下 " : "") + pick.length + " 位同学！";
         /* 落库 */
         API.insert("lottery_winners", pick.map(function(n){ return {batch: batch, prize: prize, nickname: n}; }))
           .then(function(){
@@ -610,6 +663,7 @@ function draw(){
   }).catch(function(){
     rolling = false; $("drawBtn").disabled = false;
     $("rollName").classList.remove("rolling");
+    $("rollGrid").classList.remove("rolling");
     $("drawState").textContent = "网络异常，请重试";
     $("drawState").classList.remove("hot");
   });
@@ -666,6 +720,10 @@ $("resetBtn").addEventListener("click", function(){
   }).then(function(){
     lastCount = -1; lastLatest = "";
     $("rollName").textContent = "准备就绪";
+    $("rollName").style.display = "";
+    $("rollGrid").innerHTML = "";
+    $("rollGrid").style.display = "none";
+    $("rollGrid").classList.remove("rolling");
     $("drawState").textContent = "已重置，等待同学们重新扫码";
     $("drawBtn").textContent = "开 始 抽 奖";
     $("prizeTag").textContent = "等待设置奖项";
