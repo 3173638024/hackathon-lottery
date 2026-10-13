@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>腾讯AI百校行 · 黑客松分享会 现场抽奖</title>
+<script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
+<script>
+// SDK 加载失败时走 unpkg 镜像（同一个包，只是换个 CDN）
+if (typeof WorkBuddyCloud === 'undefined') {
+  document.write('<script src="https://unpkg.com/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"><\/script>');
+}
+</script>
+<script src="qrcode.js"></script>
+<style>
+  :root{
+    --bg:#0b1030; --bg2:#141a4a; --card:rgba(255,255,255,.06);
+    --line:rgba(255,255,255,.14); --txt:#eef1ff; --sub:#aab3e0;
+    --cyan:#39e6ff; --purple:#8b6cff; --green:#07c160; --gold:#ffd166;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:radial-gradient(1200px 700px at 15% -10%,#2b2f7a 0%,transparent 60%),
+               radial-gradient(1000px 600px at 95% 110%,#123a6b 0%,transparent 55%),
+               linear-gradient(160deg,var(--bg),var(--bg2));
+    color:var(--txt);min-height:100vh;overflow-x:hidden;
+  }
+  .wrap{max-width:1200px;margin:0 auto;padding:24px}
+  .hidden{display:none!important}
+
+  /* ---------- 通用 ---------- */
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    border:none;border-radius:14px;padding:14px 26px;font-size:18px;font-weight:600;
+    color:#fff;background:linear-gradient(135deg,var(--purple),#5a7bff);cursor:pointer;
+    box-shadow:0 8px 24px rgba(90,123,255,.35);transition:transform .12s,opacity .12s;
+  }
+  .btn:active{transform:scale(.97)}
+  .btn[disabled]{opacity:.45;cursor:not-allowed;box-shadow:none}
+  .btn.green{background:linear-gradient(135deg,#0aa84f,var(--green));box-shadow:0 8px 24px rgba(7,193,96,.35)}
+  .btn.ghost{background:transparent;border:1px solid var(--line);box-shadow:none;color:var(--sub);font-size:15px;padding:10px 18px}
+  .btn.gold{background:linear-gradient(135deg,#ff9f43,var(--gold));color:#3a2a00;box-shadow:0 8px 24px rgba(255,209,102,.3)}
+  input{
+    width:100%;background:rgba(255,255,255,.08);border:1px solid var(--line);border-radius:14px;
+    padding:15px 18px;font-size:20px;color:var(--txt);outline:none;text-align:center;
+  }
+  input::placeholder{color:rgba(170,179,224,.6)}
+  input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(57,230,255,.15)}
+  .tag{display:inline-block;padding:4px 12px;border-radius:999px;background:rgba(57,230,255,.14);
+       color:var(--cyan);font-size:13px;letter-spacing:1px}
+
+  /* ---------- 观众页 ---------- */
+  #joinPage{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+  .join-card{
+    width:100%;max-width:430px;background:var(--card);border:1px solid var(--line);
+    border-radius:26px;padding:34px 26px;text-align:center;backdrop-filter:blur(8px);
+    box-shadow:0 24px 60px rgba(0,0,0,.35);
+  }
+  .join-card h1{font-size:24px;line-height:1.35;margin:14px 0 6px}
+  .join-card .sub{color:var(--sub);font-size:14px;margin-bottom:26px}
+  .join-card .logo{width:74px;height:74px;border-radius:20px;background:linear-gradient(135deg,var(--purple),var(--cyan));
+    display:flex;align-items:center;justify-content:center;font-size:34px;margin:0 auto}
+  #joinMsg{min-height:24px;margin-top:14px;font-size:15px}
+  #joinMsg.err{color:#ff8a8a}
+  #joinMsg.ok{color:var(--green)}
+  .join-done .big{font-size:64px;line-height:1;margin:8px 0 14px}
+  .live-count{margin-top:22px;padding-top:18px;border-top:1px dashed var(--line);color:var(--sub);font-size:14px}
+  .live-count b{color:var(--cyan);font-size:22px;margin:0 4px}
+
+  /* ---------- 大屏页 ---------- */
+  #screenPage{min-height:100vh;display:flex;flex-direction:column;padding:20px 26px}
+  .scr-top{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+  .scr-top h1{font-size:26px;letter-spacing:1px}
+  .scr-top .spacer{flex:1}
+  .count-pill{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:8px 20px;font-size:16px;color:var(--sub)}
+  .count-pill b{color:var(--cyan);font-size:24px;margin:0 6px}
+  .qr-box{background:#fff;border-radius:16px;padding:8px;line-height:0}
+  .qr-box img,.qr-box canvas{width:132px;height:132px;border-radius:8px}
+  .qr-cap{text-align:center;font-size:12px;color:var(--sub);margin-top:6px}
+
+  .scr-main{flex:1;display:grid;grid-template-columns:1.55fr 1fr;gap:22px;margin-top:18px}
+  @media (max-width:900px){.scr-main{grid-template-columns:1fr}}
+
+  .stage{
+    background:var(--card);border:1px solid var(--line);border-radius:24px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:26px;min-height:52vh;position:relative;overflow:hidden;text-align:center;
+  }
+  .stage .hint{color:var(--sub);font-size:15px;margin-bottom:14px}
+  .roll-names{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;max-width:92%}
+  .roll-names span{
+    background:rgba(255,255,255,.09);border:1px solid var(--line);border-radius:14px;
+    padding:12px 20px;font-size:26px;font-weight:600;animation:pop .18s ease;
+  }
+  @keyframes pop{from{transform:scale(.86);opacity:.4}to{transform:scale(1);opacity:1}}
+  .stage.idle .big-emoji{font-size:76px;margin-bottom:10px}
+  .stage.drawing .roll-names span{background:linear-gradient(135deg,rgba(139,108,255,.35),rgba(57,230,255,.25));
+    border-color:var(--cyan);animation:blink .12s infinite alternate}
+  @keyframes blink{from{opacity:.75}to{opacity:1}}
+
+  .win-banner{display:none;width:100%}
+  .stage.result .win-banner{display:block;animation:pop .3s ease}
+  .win-banner .prize{font-size:20px;color:var(--gold);letter-spacing:2px;margin-bottom:10px}
+  .win-banner .names{display:flex;flex-wrap:wrap;gap:14px;justify-content:center}
+  .win-banner .names span{
+    font-size:40px;font-weight:800;padding:10px 26px;border-radius:16px;
+    background:linear-gradient(135deg,rgba(255,209,102,.22),rgba(255,159,67,.14));
+    border:1px solid rgba(255,209,102,.5);color:#ffe9b8;
+  }
+  .confetti{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+  .confetti i{position:absolute;top:-12px;width:9px;height:14px;border-radius:2px;animation:fall linear forwards}
+  @keyframes fall{to{transform:translateY(115vh) rotate(540deg)}}
+
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:22px;display:flex;flex-direction:column;gap:16px}
+  .panel h3{font-size:16px;color:var(--sub);letter-spacing:1px;font-weight:600}
+  .row{display:flex;gap:10px}
+  .row input{padding:12px 14px;font-size:17px}
+  .winners{flex:1;overflow:auto;max-height:34vh}
+  .winners .group{margin-bottom:14px}
+  .winners .group .g{color:var(--gold);font-size:14px;margin-bottom:6px}
+  .winners .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .winners .chips span{background:rgba(255,255,255,.08);border:1px solid var(--line);border-radius:10px;
+    padding:6px 12px;font-size:15px}
+  .empty{color:var(--sub);font-size:14px;text-align:center;padding:20px 0}
+  .pool-ticker{margin-top:14px;color:var(--sub);font-size:13px;text-align:center;min-height:20px}
+  .banner{
+    position:fixed;left:50%;transform:translateX(-50%);bottom:26px;z-index:9;
+    background:rgba(20,26,74,.95);border:1px solid var(--line);border-radius:14px;
+    padding:12px 22px;font-size:14px;color:var(--sub);max-width:88vw;
+  }
+  .banner b{color:var(--gold)}
+</style>
+</head>
+<body>
+
+<!-- =============== 观众页：扫码参与 =============== -->
+<div id="joinPage">
+  <div class="join-card">
+    <div class="logo">🎁</div>
+    <div class="tag" style="margin-top:14px">腾讯AI百校行 · 黑客松分享会</div>
+    <h1>现场抽奖 · 扫码即参与</h1>
+    <div class="sub">填个昵称就能进抽奖池，中奖名单现场大屏公布</div>
+
+    <div id="joinForm">
+      <input id="nickInput" maxlength="12" placeholder="输入昵称（12字以内）" autocomplete="off">
+      <div id="joinMsg"></div>
+      <button class="btn green" id="joinBtn" style="width:100%;margin-top:8px">加入抽奖</button>
+    </div>
+
+    <div id="joinDone" class="join-done hidden">
+      <div class="big">🎉</div>
+      <h1>已加入抽奖池！</h1>
+      <div class="sub">昵称：<b id="doneNick" style="color:var(--cyan)"></b><br>请在现场等待开奖，大屏会念到你的名字</div>
+    </div>
+
+    <div class="live-count">当前已有 <b id="joinCount">0</b> 位同学参与</div>
+  </div>
+</div>
+
+<!-- =============== 大屏页：主持端 =============== -->
+<div id="screenPage" class="hidden">
+  <div class="scr-top">
+    <div>
+      <h1>🎁 现场抽奖</h1>
+      <div class="qr-cap" style="text-align:left">腾讯AI百校行 · 黑客松分享会</div>
+    </div>
+    <div class="spacer"></div>
+    <div class="count-pill">参与人数<b id="scrCount">0</b></div>
+    <div>
+      <div class="qr-box" id="qrBox"></div>
+      <div class="qr-cap">手机扫码参与</div>
+    </div>
+    <button class="btn ghost" id="fsBtn">全屏</button>
+  </div>
+
+  <div class="scr-main">
+    <!-- 左：舞台 -->
+    <div class="stage idle" id="stage">
+      <div class="confetti" id="confetti"></div>
+      <div id="stageIdle">
+        <div class="big-emoji">🎰</div>
+        <div class="hint">设置奖项与人数，点击「开始抽奖」</div>
+        <div class="roll-names" id="poolPreview"></div>
+        <div class="pool-ticker" id="poolTicker"></div>
+      </div>
+      <div class="win-banner" id="winBanner">
+        <div class="prize" id="winPrize"></div>
+        <div class="names" id="winNames"></div>
+      </div>
+      <div class="roll-names hidden" id="rollNames"></div>
+    </div>
+
+    <!-- 右：控制台 -->
+    <div class="panel">
+      <h3>本轮设置</h3>
+      <div class="row">
+        <input id="prizeInput" placeholder="奖项名称，如：一等奖" maxlength="20">
+        <input id="numInput" type="number" min="1" max="20" value="1" style="max-width:110px">
+      </div>
+      <button class="btn gold" id="drawBtn" style="width:100%">开始抽奖</button>
+      <div style="display:flex;gap:10px">
+        <button class="btn ghost" id="againBtn" style="flex:1">同一奖项再抽一轮</button>
+        <button class="btn ghost" id="resetBtn" style="flex:1">重置活动</button>
+      </div>
+      <h3 style="margin-top:6px">中奖名单</h3>
+      <div class="winners" id="winnerList"><div class="empty">暂无中奖记录</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="banner hidden" id="banner"></div>
+
+<script>
+/* ================== 配置（部署时由平台注入） ================== */
+var CONFIG = {
+  endpoint: "https://hackathon-lottery-24599.app.workbuddy.host",
+  oauthRelayBaseUrl: "https://www.workbuddy.cn/v2/as/genie-baas/oauth",
+  publishableKey: "wbpk_11SzlzluuOWdFnthivMArv_5DmpUvjqn9dvER1on31gKXxAEpIz4VHP"
+};
+var CONFIG_OK = CONFIG.endpoint.indexOf("__") === -1;
+
+/* ================== 工具 ================== */
+function $(id){ return document.getElementById(id); }
+function show(id){ $(id).classList.remove("hidden"); }
+function hide(id){ $(id).classList.add("hidden"); }
+function toast(msg, ms){
+  var b = $("banner"); b.innerHTML = msg; b.classList.remove("hidden");
+  clearTimeout(b._t); b._t = setTimeout(function(){ b.classList.add("hidden"); }, ms || 3200);
+}
+function shuffle(arr){
+  var a = arr.slice();
+  for (var i = a.length - 1; i > 0; i--){
+    var j = Math.floor(Math.random() * (i + 1));
+    var t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+  return a;
+}
+function esc(s){ return String(s).replace(/[&<>"']/g, function(c){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+
+/* ================== 云端 ================== */
+var cloud = null;
+function initCloud(){
+  if (!CONFIG_OK) { toast("⚠️ 应用尚未完成部署配置，请联系主办方", 999999); return false; }
+  if (typeof WorkBuddyCloud === "undefined"){ toast("⚠️ 网络异常，二维码库/云服务加载失败，请刷新重试", 999999); return false; }
+  cloud = WorkBuddyCloud.createWorkBuddyCloud({
+    endpoint: CONFIG.endpoint,
+    oauthRelayBaseUrl: CONFIG.oauthRelayBaseUrl,
+    publishableKey: CONFIG.publishableKey
+  });
+  return true;
+}
+
+/* 当前批次：state 表里 id 最大的那一行 */
+function getBatch(){
+  return cloud.database.from("lottery_state").select("batch").order("id", {ascending:false}).limit(1)
+    .then(function(r){ if (r.error) throw r.error; return (r.data && r.data[0]) ? r.data[0].batch : 1; });
+}
+function getPool(batch){
+  return cloud.database.from("lottery_pool").select("nickname")
+    .eq("batch", batch).order("id", {ascending:true})
+    .then(function(r){ if (r.error) throw r.error; return (r.data||[]).map(function(x){return x.nickname;}); });
+}
+function getWinnerNicks(){
+  return cloud.database.from("lottery_winners").select("nickname")
+    .then(function(r){ if (r.error) throw r.error; return (r.data||[]).map(function(x){return x.nickname;}); });
+}
+function getWinners(){
+  return cloud.database.from("lottery_winners").select("prize,nickname")
+    .order("id", {ascending:true})
+    .then(function(r){ if (r.error) throw r.error; return r.data || []; });
+}
+
+/* ================== 观众页 ================== */
+var joined = false;
+function refreshJoinCount(){
+  if (!cloud || joined) return;
+  getBatch().then(function(b){ return getPool(b); }).then(function(list){
+    $("joinCount").textContent = list.length;
+  }).catch(function(){});
+}
+function doJoin(){
+  var nick = $("nickInput").value.trim();
+  var msg = $("joinMsg");
+  if (!nick){ msg.textContent = "先填个昵称～"; msg.className = "err"; return; }
+  if (nick.length > 12){ msg.textContent = "昵称太长啦（12字以内）"; msg.className = "err"; return; }
+  msg.textContent = "正在加入…"; msg.className = "";
+  $("joinBtn").disabled = true;
+
+  getBatch().then(function(batch){
+    return cloud.database.from("lottery_pool").select("id").eq("batch", batch).eq("nickname", nick).limit(1)
+      .then(function(r){
+        if (r.error) throw r.error;
+        if (r.data && r.data.length){ return {dup:true}; }
+        return cloud.database.from("lottery_pool").insert({batch:batch, nickname:nick})
+          .then(function(r2){
+            if (r2.error) throw r2.error;
+            return {dup:false, batch:batch};
+          });
+      });
+  }).then(function(res){
+    if (res.dup){
+      msg.textContent = "这个昵称已经在池子里啦，换一个试试"; msg.className = "err";
+      $("joinBtn").disabled = false; return;
+    }
+    joined = true;
+    $("doneNick").textContent = nick;
+    hide("joinForm"); show("joinDone");
+    $("joinCount").textContent = parseInt($("joinCount").textContent || "0", 10) + 1;
+    msg.textContent = "";
+  }).catch(function(e){
+    msg.textContent = "加入失败，请检查网络后重试"; msg.className = "err";
+    $("joinBtn").disabled = false;
+  });
+}
+$("joinBtn").addEventListener("click", doJoin);
+$("nickInput").addEventListener("keydown", function(e){ if (e.key === "Enter") doJoin(); });
+
+/* ================== 大屏页 ================== */
+var drawing = false, currentBatch = 1, lastPrize = "", lastNum = 1;
+
+function makeQR(){
+  var url = location.origin + location.pathname + "#/join";
+  var box = $("qrBox"); box.innerHTML = "";
+  try{
+    var qr = qrcode(0, "M"); qr.addData(url); qr.make();
+    var img = document.createElement("img");
+    img.src = qr.createDataURL(10, 1);
+    img.alt = "扫码参与";
+    box.appendChild(img);
+  }catch(e){
+    box.innerHTML = '<div style="width:132px;height:132px;display:flex;align-items:center;justify-content:center;color:#333;font-size:12px;text-align:center;padding:6px">二维码生成失败<br>请直接访问<br>' + esc(url) + '</div>';
+  }
+}
+
+function renderWinners(list){
+  var el = $("winnerList");
+  if (!list.length){ el.innerHTML = '<div class="empty">暂无中奖记录</div>'; return; }
+  var groups = {}, order = [];
+  list.forEach(function(w){
+    if (!groups[w.prize]){ groups[w.prize] = []; order.push(w.prize); }
+    groups[w.prize].push(w.nickname);
+  });
+  el.innerHTML = order.map(function(p){
+    return '<div class="group"><div class="g">🏆 ' + esc(p) + '</div><div class="chips">' +
+      groups[p].map(function(n){ return "<span>" + esc(n) + "</span>"; }).join("") + '</div></div>';
+  }).join("");
+}
+
+function refreshScreen(){
+  if (!cloud || drawing) return;
+  Promise.all([getBatch(), getWinners()]).then(function(res){
+    currentBatch = res[0];
+    $("scrCount").textContent = "";
+    return getPool(currentBatch).then(function(pool){
+      $("scrCount").textContent = pool.length;
+      if (!drawing){
+        var recent = pool.slice(-10);
+        $("poolPreview").innerHTML = recent.map(function(n){ return "<span>" + esc(n) + "</span>"; }).join("") ||
+          '<span style="background:none;border:none;color:var(--sub)">等待同学扫码…</span>';
+        $("poolTicker").textContent = pool.length ? "最新加入：" + esc(recent[recent.length-1]) : "";
+      }
+      renderWinners(res[1]);
+    });
+  }).catch(function(){});
+}
+
+function confetti(){
+  var box = $("confetti"); box.innerHTML = "";
+  var colors = ["#ffd166","#39e6ff","#8b6cff","#07c160","#ff8a8a"];
+  for (var i = 0; i < 70; i++){
+    var i2 = document.createElement("i");
+    i2.style.left = Math.random() * 100 + "%";
+    i2.style.background = colors[i % colors.length];
+    i2.style.animationDuration = (1.6 + Math.random() * 1.8) + "s";
+    i2.style.animationDelay = (Math.random() * 0.6) + "s";
+    box.appendChild(i2);
+  }
+  setTimeout(function(){ box.innerHTML = ""; }, 4200);
+}
+
+function doDraw(){
+  if (drawing) return;
+  if (!cloud){ toast("⚠️ 云服务未就绪，请刷新页面"); return; }
+  var prize = $("prizeInput").value.trim();
+  var num = parseInt($("numInput").value || "1", 10);
+  if (!prize){ toast("先填写奖项名称，如：一等奖"); return; }
+  if (!num || num < 1){ toast("抽取人数至少为 1"); return; }
+
+  drawing = true;
+  $("drawBtn").disabled = true; $("againBtn").disabled = true;
+  var stage = $("stage");
+  stage.className = "stage drawing";
+  $("winBanner").style.display = "none";
+  show("rollNames");
+  var roll = $("rollNames");
+
+  Promise.all([getBatch(), getPool(currentBatch), getWinnerNicks()]).then(function(res){
+    var batch = res[0], pool = res[1], won = {};
+    res[2].forEach(function(n){ won[n] = 1; });
+    var candidates = pool.filter(function(n){ return !won[n]; });
+    if (!candidates.length){
+      drawing = false;
+      stage.className = "stage idle";
+      hide("rollNames");
+      $("drawBtn").disabled = false; $("againBtn").disabled = false;
+      toast("池子里没有可抽的同学了（可能都中过奖）");
+      return;
+    }
+    if (num > candidates.length){
+      num = candidates.length;
+      $("numInput").value = num;
+      toast("剩余候选不足，本轮抽取 " + num + " 人");
+    }
+
+    // 滚动动画
+    var tick = 0;
+    var timer = setInterval(function(){
+      var showN = shuffle(candidates).slice(0, Math.min(num, 6));
+      roll.innerHTML = showN.map(function(n){ return "<span>" + esc(n) + "</span>"; }).join("");
+      if (++tick > 26){
+        clearInterval(timer);
+        var winners = shuffle(candidates).slice(0, num);
+        cloud.database.from("lottery_winners")
+          .insert(winners.map(function(n){ return {batch:batch, prize:prize, nickname:n}; }))
+          .then(function(r){
+            if (r.error) throw r.error;
+            lastPrize = prize; lastNum = num;
+            stage.className = "stage result";
+            hide("rollNames");
+            $("winPrize").textContent = "🏆 " + prize;
+            $("winNames").innerHTML = winners.map(function(n){ return "<span>" + esc(n) + "</span>"; }).join("");
+            $("winBanner").style.display = "block";
+            confetti();
+            refreshScreen();
+          })
+          .catch(function(){ toast("开奖失败，请重试（未写入中奖名单）"); stage.className = "stage idle"; hide("rollNames"); })
+          .then(function(){
+            drawing = false;
+            $("drawBtn").disabled = false; $("againBtn").disabled = false;
+          });
+      }
+    }, 110);
+  }).catch(function(){
+    drawing = false; stage.className = "stage idle"; hide("rollNames");
+    $("drawBtn").disabled = false; $("againBtn").disabled = false;
+    toast("读取抽奖池失败，请检查网络");
+  });
+}
+
+$("drawBtn").addEventListener("click", doDraw);
+$("againBtn").addEventListener("click", function(){
+  $("prizeInput").value = lastPrize || $("prizeInput").value;
+  $("numInput").value = lastNum || 1;
+  $("stage").className = "stage idle";
+  $("winBanner").style.display = "none";
+  doDraw();
+});
+$("resetBtn").addEventListener("click", function(){
+  if (!cloud) return;
+  if (!confirm("重置活动？\n\n将清空当前大屏上的参与人数与中奖名单显示（历史数据保留在后台），所有人需重新扫码参与。\n\n确定要重置吗？")) return;
+  getBatch().then(function(b){
+    return cloud.database.from("lottery_state").insert({batch: b + 1, note: "reset"});
+  }).then(function(){
+    $("stage").className = "stage idle";
+    $("winBanner").style.display = "none";
+    $("winnerList").innerHTML = '<div class="empty">暂无中奖记录</div>';
+    $("scrCount").textContent = "0";
+    toast("已重置，等待新一批同学扫码参与");
+    refreshScreen();
+  }).catch(function(){ toast("重置失败，请重试"); });
+});
+$("fsBtn").addEventListener("click", function(){
+  if (document.fullscreenElement){ document.exitFullscreen(); }
+  else if (document.documentElement.requestFullscreen){ document.documentElement.requestFullscreen(); }
+});
+
+/* ================== 路由 ================== */
+function route(){
+  var h = location.hash || "#/join";
+  if (h.indexOf("screen") > -1){
+    hide("joinPage"); show("screenPage");
+    document.title = "现场抽奖 · 大屏";
+    if (!window._screenInited){
+      window._screenInited = true;
+      makeQR();
+      setInterval(refreshScreen, 2500);
+      refreshScreen();
+    }
+  }else{
+    hide("screenPage"); show("joinPage");
+    document.title = "腾讯AI百校行 · 黑客松分享会 现场抽奖";
+    if (!window._joinInited){
+      window._joinInited = true;
+      setInterval(refreshJoinCount, 3000);
+      refreshJoinCount();
+    }
+  }
+}
+window.addEventListener("hashchange", route);
+
+/* ================== 启动 ================== */
+if (initCloud()){ route(); }
+else { route(); }
+</script>
+</body>
+</html>
